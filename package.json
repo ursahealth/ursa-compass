@@ -1,19 +1,36 @@
 {
   "name": "ursa-copilot",
   "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
+  "description": "Ursa Health's AI Copilot",
+  "type": "module",
+  "main": "./lib/index.cjs",
+  "exports": {
+    "import": "./esm/index.js",
+    "require": "./lib/index.cjs"
+  },
+  "files": [
+    "lib",
+    "esm"
+  ],
   "scripts": {
+    "build": "rollup -c",
+    "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shackbarth/ursa-copilot.git"
+    "url": "git+https://github.com/ursahealth/ursa-copilot.git"
   },
   "author": "Steve Hackbarth",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/shackbarth/ursa-copilot/issues"
+    "url": "https://github.com/ursahealth/ursa-copilot/issues"
   },
-  "homepage": "https://github.com/shackbarth/ursa-copilot#readme"
+  "homepage": "https://github.com/ursahealth/ursa-copilot#readme",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "rollup": "^4.20.0"
+  }
 }
