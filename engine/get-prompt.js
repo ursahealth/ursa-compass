@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 
-export default async function getPrompt(stageName, promptTitle, options, params = {}) {
+export default async function getPrompt(stageName, promptTitle, options = {}, params = {}) {
   let fullText;
   if (options.prompts && options.prompts[stageName]) {
     fullText = options.prompts[stageName];
