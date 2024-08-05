@@ -55,6 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     io.on("connection", (socket) => {
       let messageID = 1;
       const commonOptions = {
+        databaseType: process.env.DATABASE_TYPE,
         log: (contents: string) => {
           socket.emit("log", contents);
         },

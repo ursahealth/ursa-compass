@@ -9,17 +9,15 @@ async function getAssertion(tableName, tableDocumentation, question, questionInd
   let initialData;
   if (questionIndex === 0) {
     const initialDataSql = `SELECT *\nFROM ${tableName}\nLIMIT 3`;
-    let initialDataResult;
     try {
-      initialDataResult = await query(initialDataSql);
+      initialData = await query(initialDataSql, options);
     } catch (err) {
       options.sendMessage("Error fetching initial data, does this table exist?");
       throw err;
     }
     options.sendMessage(`We'll be determining the answer to the question: ${question}`);
-    initialData = initialDataResult.rows;
     options.sendMessage({ sql: initialDataSql, result: initialData }, "query");
-    queries.push({ sql: initialDataSql, result: initialDataResult.rows });
+    queries.push({ sql: initialDataSql, result: initialData });
   } else {
     options.sendMessage(`We'll be determining the answer to the question: ${question}`);
   }

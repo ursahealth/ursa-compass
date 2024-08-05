@@ -75,12 +75,12 @@ async function trySql(response, options) {
       sql = `SELECT\n${sql}\nFROM ${options.tableName}\nLIMIT 1`;
     }
     try {
-      result = await query(sql);
+      result = await query(sql, options);
       options.sendMessage(response); // if the SQL runs, send the full message with annotations
       if (options.sendQuery) {
-        options.sendQuery(sql, result.rows);
+        options.sendQuery(sql, result);
       } else {
-        options.sendMessage({ sql, result: result.rows }, "query");
+        options.sendMessage({ sql, result }, "query");
       }
       if (options.isCleaningChunk) {
         return { annotatedSql: response, sql, result };
@@ -124,7 +124,7 @@ export default async function handler(text, options) {
       const { result } = await trySql(response, options);
       addToConversation(
         "user",
-        `Result is: \n\`\`\`\n${JSON.stringify(result?.rows)}\n\`\`\``,
+        `Result is: \n\`\`\`\n${JSON.stringify(result)}\n\`\`\``,
         options
       );
     } else {

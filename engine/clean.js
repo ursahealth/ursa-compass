@@ -84,8 +84,8 @@ export default async function clean(tableName, type, options) {
     }
   }
 
-  const initialDataResult = await query(`SELECT * FROM ${tableName} LIMIT 1`);
-  const allColumns = Object.keys(initialDataResult.rows[0]);
+  const initialDataResult = await query(`SELECT * FROM ${tableName} LIMIT 1`, options);
+  const allColumns = Object.keys(initialDataResult[0]);
   const columnChunks = _.chunk(allColumns, 20);
 
   const sqlChunks = [];

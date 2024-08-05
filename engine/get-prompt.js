@@ -7,7 +7,7 @@ export default async function getPrompt(stageName, promptTitle, params = {}) {
   const dirname =
     typeof import.meta !== "undefined" ? path.dirname(fileURLToPath(import.meta.url)) : __dirname;
   const fullText = await readFile(path.resolve(dirname, `../prompts/${stageName}.txt`), "utf-8");
-  
+
   let segment;
   if (promptTitle) {
     const segments = fullText.split("## ");
