@@ -15,24 +15,21 @@ function waitForSocketResponse(socket: Socket, eventName: string): Promise<{ tex
     const timeoutId = setTimeout(() => {
       socket.off(eventName, onResponse); // Remove listener to prevent memory leaks
       socket.off("disconnect", onDisconnect);
-      // reject(new Error("Response timeout"));
-    }, 1000000); // 1000-second timeout for example
+    }, 60 * 60 * 1000); // 1 hour timeout for example
 
     const onResponse = (data: { text: string }) => {
       clearTimeout(timeoutId);
-      socket.off(eventName, onResponse); // Remove this listener once it has fulfilled its purpose
       socket.off("disconnect", onDisconnect);
       resolve(data);
     };
 
     const onDisconnect = () => {
       clearTimeout(timeoutId);
-      socket.off(eventName, onResponse); // Make sure to clean up both listeners
-      socket.off("disconnect", onDisconnect);
+      socket.off(eventName, onResponse);
     };
 
-    socket.on(eventName, onResponse);
-    socket.on("disconnect", onDisconnect);
+    socket.once(eventName, onResponse);
+    socket.once("disconnect", onDisconnect);
   });
 }
 
