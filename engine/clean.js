@@ -6,7 +6,7 @@ import getPrompt from "./get-prompt.js";
 import getTableDescriptions from "./get-table-descriptions.js";
 import handleChat from "./handler.js";
 import query from "./query.js";
-import * as landingTables from "./prompts/landing-tables.js";
+import * as landingTables from "./landing-tables.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,12 +20,12 @@ export default async function clean(tableName, type, options) {
     return;
   }
 
-  const preamblePrompt = await getPrompt("clean", "PREAMBLE", {
+  const preamblePrompt = await getPrompt("clean", "PREAMBLE", options, {
     tableName,
     assertions,
   });
 
-  const formattingDirectionsPrompt = await getPrompt("clean", type.toUpperCase(), {
+  const formattingDirectionsPrompt = await getPrompt("clean", type.toUpperCase(), options, {
     tableDescriptions: getTableDescriptions(landingTables[type]),
   });
 
@@ -50,7 +50,7 @@ export default async function clean(tableName, type, options) {
         chunkIndex === 0
           ? "FIRST DESTINATION COLUMN STRATEGY"
           : "SUBSEQUENT DESTINATION COLUMN STRATEGY";
-      prompt = await getPrompt("clean", promptTitle, {
+      prompt = await getPrompt("clean", promptTitle, options, {
         tableName,
         destinationTable: tableSpec.table,
         destinationTableDescription: tableSpec.description,
@@ -84,8 +84,8 @@ export default async function clean(tableName, type, options) {
     }
   }
 
-  const initialDataResult = await query(`SELECT * FROM ${tableName} LIMIT 1`);
-  const allColumns = Object.keys(initialDataResult.rows[0]);
+  const initialDataResult = await query(`SELECT * FROM ${tableName} LIMIT 1`, options);
+  const allColumns = Object.keys(initialDataResult[0]);
   const columnChunks = _.chunk(allColumns, 20);
 
   const sqlChunks = [];
@@ -100,7 +100,7 @@ export default async function clean(tableName, type, options) {
     options.sendMessage(startMessage);
     const promptTitle =
       chunkIndex === 0 ? "FIRST SOURCE COLUMN STRATEGY" : "SUBSEQUENT SOURCE COLUMN STRATEGY";
-    prompt = await getPrompt("clean", promptTitle, {
+    prompt = await getPrompt("clean", promptTitle, options, {
       tableName,
       columns: columnChunks[chunkIndex].join("\n"),
     });
@@ -128,7 +128,7 @@ export default async function clean(tableName, type, options) {
     }
 
     const sqlPromptTitle = chunkIndex === 0 ? "FIRST GENERATE SQL" : "SUBSEQUENT GENERATE SQL";
-    prompt = await getPrompt("clean", sqlPromptTitle, {
+    prompt = await getPrompt("clean", sqlPromptTitle, options, {
       tableName,
       columns: columnChunks[chunkIndex].join("\n"),
     });

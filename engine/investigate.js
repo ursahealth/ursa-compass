@@ -9,17 +9,15 @@ async function getAssertion(tableName, tableDocumentation, question, questionInd
   let initialData;
   if (questionIndex === 0) {
     const initialDataSql = `SELECT *\nFROM ${tableName}\nLIMIT 3`;
-    let initialDataResult;
     try {
-      initialDataResult = await query(initialDataSql);
+      initialData = await query(initialDataSql, options);
     } catch (err) {
       options.sendMessage("Error fetching initial data, does this table exist?");
       throw err;
     }
     options.sendMessage(`We'll be determining the answer to the question: ${question}`);
-    initialData = initialDataResult.rows;
     options.sendMessage({ sql: initialDataSql, result: initialData }, "query");
-    queries.push({ sql: initialDataSql, result: initialDataResult.rows });
+    queries.push({ sql: initialDataSql, result: initialData });
   } else {
     options.sendMessage(`We'll be determining the answer to the question: ${question}`);
   }
@@ -36,7 +34,7 @@ async function getAssertion(tableName, tableDocumentation, question, questionInd
     question,
     initialData,
   };
-  let prompt = await getPrompt("investigate", segmentTitle, params);
+  let prompt = await getPrompt("investigate", segmentTitle, options, params);
   for (let i = 0; i < 100; i++) {
     let response = await handleChat(prompt, options);
     if (response.responseType === "ASSERTION") {
@@ -73,7 +71,7 @@ async function getAssertion(tableName, tableDocumentation, question, questionInd
 }
 
 export default async function investigate(tableName, tableDocumentation, options) {
-  const questionText = await getPrompt("investigate", "QUESTIONS");
+  const questionText = await getPrompt("investigate", "QUESTIONS", options);
   const questions = questionText.split("\n*****");
   for (let i = 0; i < questions.length; i++) {
     await getAssertion(tableName, tableDocumentation, questions[i], i, options);

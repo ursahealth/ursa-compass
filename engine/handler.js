@@ -37,17 +37,17 @@ function extractCodeBlock(text) {
   return text;
 }
 
-async function queryAI(conversation) {
+async function queryAI(conversation, options = {}) {
   const params = {
     body: JSON.stringify({
       messages: conversation,
       max_tokens: 1000, // TODO: increase probably
-      temperature: 0.5, // TODO: parameterize
+      temperature: options.temperature || options.temperature === 0 ? options.temperature : 0.5,
       anthropic_version: "bedrock-2023-05-31",
     }),
     contentType: "application/json",
     accept: "application/json",
-    modelId: "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    modelId: options?.modelId || "anthropic.claude-3-5-sonnet-20240620-v1:0",
   };
 
   const command = new InvokeModelCommand(params);
@@ -75,12 +75,12 @@ async function trySql(response, options) {
       sql = `SELECT\n${sql}\nFROM ${options.tableName}\nLIMIT 1`;
     }
     try {
-      result = await query(sql);
+      result = await query(sql, options);
       options.sendMessage(response); // if the SQL runs, send the full message with annotations
       if (options.sendQuery) {
-        options.sendQuery(sql, result.rows);
+        options.sendQuery(sql, result);
       } else {
-        options.sendMessage({ sql, result: result.rows }, "query");
+        options.sendMessage({ sql, result }, "query");
       }
       if (options.isCleaningChunk) {
         return { annotatedSql: response, sql, result };
@@ -95,7 +95,7 @@ async function trySql(response, options) {
           "start your next message with an apology. Just respond as if you had responded " +
           "the first time, but fix the SQL.",
       });
-      response = await queryAI(conversation);
+      response = await queryAI(conversation, options);
       addToConversation("assistant", response, options);
     }
   }
@@ -106,7 +106,7 @@ export default async function handler(text, options) {
   addToConversation("user", text, options);
 
   for (let i = 0; i < 20; i++) {
-    let response = await queryAI(conversation);
+    let response = await queryAI(conversation, options);
     addToConversation("assistant", response, options);
 
     const responseType = getResponseType(response);
@@ -124,7 +124,7 @@ export default async function handler(text, options) {
       const { result } = await trySql(response, options);
       addToConversation(
         "user",
-        `Result is: \n\`\`\`\n${JSON.stringify(result?.rows)}\n\`\`\``,
+        `Result is: \n\`\`\`\n${JSON.stringify(result)}\n\`\`\``,
         options
       );
     } else {

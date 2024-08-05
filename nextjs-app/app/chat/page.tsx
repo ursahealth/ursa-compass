@@ -127,7 +127,7 @@ export default function Page({}: {}) {
     if (!showLogBar && inputRef.current) {
       inputRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [chatHistory]);
+  }, [showLogBar, chatHistory]);
 
   return (
     <div className="flex h-full w-full flex-row justify-between">
