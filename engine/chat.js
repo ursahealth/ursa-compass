@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import getPrompt from "./get-prompt.js";
 import getTableDescriptions from "./get-table-descriptions.js";
 import handleChat from "./handler.js";
-import * as landingTables from "./prompts/landing-tables.js";
+import * as landingTables from "./landing-tables.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

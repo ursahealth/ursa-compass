@@ -3,9 +3,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 export default async function getPrompt(stageName, promptTitle, params = {}) {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const fullText = await readFile(path.resolve(__dirname, `prompts/${stageName}.txt`), "utf-8");
+  // support ESM and CJS
+  const dirname =
+    typeof import.meta !== "undefined" ? path.dirname(fileURLToPath(import.meta.url)) : __dirname;
+  const fullText = await readFile(path.resolve(dirname, `../prompts/${stageName}.txt`), "utf-8");
+  
   let segment;
   if (promptTitle) {
     const segments = fullText.split("## ");

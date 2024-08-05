@@ -23,9 +23,7 @@ export default async function query(sql, params, retryCount = 0) {
   if (!pool) {
     pool = new pg.Pool({
       connectionString: process.env.TARGET_DATABASE_URL,
-      ssl: {
-        rejectUnauthorized: !process.env.ALLOW_PG_UNAUTHORIZED,
-      },
+      ssl: !process.env.REJECT_PG_UNAUTHORIZED ? { rejectUnauthorized: false } : true,
     });
 
     pool.on("error", (err) => {
