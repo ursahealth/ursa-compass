@@ -2,11 +2,16 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 
-export default async function getPrompt(stageName, promptTitle, params = {}) {
-  // support ESM and CJS
-  const dirname =
-    typeof import.meta !== "undefined" ? path.dirname(fileURLToPath(import.meta.url)) : __dirname;
-  const fullText = await readFile(path.resolve(dirname, `../prompts/${stageName}.txt`), "utf-8");
+export default async function getPrompt(stageName, promptTitle, options, params = {}) {
+  let fullText;
+  if (options.prompts && options.prompts[stageName]) {
+    fullText = options.prompts[stageName];
+  } else {
+    // support ESM and CJS
+    const dirname =
+      typeof import.meta !== "undefined" ? path.dirname(fileURLToPath(import.meta.url)) : __dirname;
+    fullText = await readFile(path.resolve(dirname, `../prompts/${stageName}.txt`), "utf-8");
+  }
 
   let segment;
   if (promptTitle) {

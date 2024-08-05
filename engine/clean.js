@@ -20,12 +20,12 @@ export default async function clean(tableName, type, options) {
     return;
   }
 
-  const preamblePrompt = await getPrompt("clean", "PREAMBLE", {
+  const preamblePrompt = await getPrompt("clean", "PREAMBLE", options, {
     tableName,
     assertions,
   });
 
-  const formattingDirectionsPrompt = await getPrompt("clean", type.toUpperCase(), {
+  const formattingDirectionsPrompt = await getPrompt("clean", type.toUpperCase(), options, {
     tableDescriptions: getTableDescriptions(landingTables[type]),
   });
 
@@ -50,7 +50,7 @@ export default async function clean(tableName, type, options) {
         chunkIndex === 0
           ? "FIRST DESTINATION COLUMN STRATEGY"
           : "SUBSEQUENT DESTINATION COLUMN STRATEGY";
-      prompt = await getPrompt("clean", promptTitle, {
+      prompt = await getPrompt("clean", promptTitle, options, {
         tableName,
         destinationTable: tableSpec.table,
         destinationTableDescription: tableSpec.description,
@@ -100,7 +100,7 @@ export default async function clean(tableName, type, options) {
     options.sendMessage(startMessage);
     const promptTitle =
       chunkIndex === 0 ? "FIRST SOURCE COLUMN STRATEGY" : "SUBSEQUENT SOURCE COLUMN STRATEGY";
-    prompt = await getPrompt("clean", promptTitle, {
+    prompt = await getPrompt("clean", promptTitle, options, {
       tableName,
       columns: columnChunks[chunkIndex].join("\n"),
     });
@@ -128,7 +128,7 @@ export default async function clean(tableName, type, options) {
     }
 
     const sqlPromptTitle = chunkIndex === 0 ? "FIRST GENERATE SQL" : "SUBSEQUENT GENERATE SQL";
-    prompt = await getPrompt("clean", sqlPromptTitle, {
+    prompt = await getPrompt("clean", sqlPromptTitle, options, {
       tableName,
       columns: columnChunks[chunkIndex].join("\n"),
     });

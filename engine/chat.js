@@ -18,12 +18,12 @@ export default async function chat(tableName, type, inputText, options) {
     assertions = "<actually no assertions exist>";
   }
 
-  const preamblePrompt = await getPrompt("chat", "PREAMBLE", {
+  const preamblePrompt = await getPrompt("chat", "PREAMBLE", options, {
     tableName,
     assertions,
   });
 
-  const formattingDirectionsPrompt = await getPrompt("chat", type.toUpperCase(), {
+  const formattingDirectionsPrompt = await getPrompt("chat", type.toUpperCase(), options, {
     tableDescriptions: getTableDescriptions(landingTables[type]),
     question: inputText,
   });

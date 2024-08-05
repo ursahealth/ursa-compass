@@ -34,7 +34,7 @@ async function getAssertion(tableName, tableDocumentation, question, questionInd
     question,
     initialData,
   };
-  let prompt = await getPrompt("investigate", segmentTitle, params);
+  let prompt = await getPrompt("investigate", segmentTitle, options, params);
   for (let i = 0; i < 100; i++) {
     let response = await handleChat(prompt, options);
     if (response.responseType === "ASSERTION") {
@@ -71,7 +71,7 @@ async function getAssertion(tableName, tableDocumentation, question, questionInd
 }
 
 export default async function investigate(tableName, tableDocumentation, options) {
-  const questionText = await getPrompt("investigate", "QUESTIONS");
+  const questionText = await getPrompt("investigate", "QUESTIONS", options);
   const questions = questionText.split("\n*****");
   for (let i = 0; i < questions.length; i++) {
     await getAssertion(tableName, tableDocumentation, questions[i], i, options);
