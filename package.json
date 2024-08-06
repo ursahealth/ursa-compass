@@ -1,6 +1,6 @@
 {
   "name": "ursa-copilot",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Ursa Health's AI Copilot",
   "type": "module",
   "main": "./lib/index.cjs",
