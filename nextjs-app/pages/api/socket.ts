@@ -109,7 +109,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           },
         });
         try {
-          await investigate(content.tableName, content.tableDocumentation, options);
+          await investigate(content.type, content.tableName, content.tableDocumentation, options);
         } catch (err) {
           console.error(err);
           socket.emit("message", { text: "Sorry, I ran into an error" });
