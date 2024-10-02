@@ -29,7 +29,7 @@ export default function Page({}: {}) {
   >([]);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [tableName, setTableName] = useState<string>("");
-  const [actionType, setActionType] = useState<string>("investigate");
+  const [actionType, setActionType] = useState<string>("investigate:claims");
   const [tableDocumentation, setTableDocumentation] = useState<string>("");
   const [inputText, setInputText] = useState<string>("");
   const [isUnderway, setIsUnderway] = useState<boolean>(false);
@@ -39,8 +39,9 @@ export default function Page({}: {}) {
   const [showLogBar, setShowLogBar] = useState<boolean>(false);
 
   const handleStartClick = function () {
-    if (actionType === "investigate") {
-      socket.emit("investigate", { tableName, tableDocumentation });
+    if (_.startsWith(actionType, "investigate:")) {
+      const [action, type] = actionType.split(":");
+      socket.emit(action, { tableDocumentation, tableName, type });
     } else if (actionType === "chat:membership") {
       const [action, type] = actionType.split(":");
       socket.emit(action, { inputText, tableName, type });
@@ -151,14 +152,13 @@ export default function Page({}: {}) {
                 onChange={(e) => setActionType(e.target.value)}
                 value={actionType}
               >
-                <option value="investigate">Investigate</option>
-                <option value="clean:institutional">Clean: Institutional Claims</option>
-                <option value="clean:membership">Clean: Membership Information</option>
-                <option value="clean:pharmacy">Clean: Pharmacy Claims</option>
-                <option value="clean:professional">Clean: Professional Claims</option>
+                <option value="investigate:claims">Investigate: Medical Claims</option>
+                <option value="investigate:membership">Investigate: Membership/Eligibility File</option>
+                <option value="investigate:mmr">Investigate: MMR File</option>
+                <option value="investigate:pharmacy">Investigate: Pharmacy Claims</option>
                 <option value="chat:membership">Chat: Membership Information</option>
               </select>
-              {actionType === "investigate" ? (
+              {_.startsWith(actionType, "investigate") ? (
                 <textarea
                   className="peer block h-32 w-full rounded-md border border-gray-200 py-[9px] text-sm outline-2 placeholder:text-gray-500"
                   placeholder="Add any pre-existing documentation or notes here"

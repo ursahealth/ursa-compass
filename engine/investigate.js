@@ -30,7 +30,7 @@ async function getAssertion(tableName, tableDocumentation, question, questionInd
   const segmentTitle = questionIndex === 0 ? "FIRST PREAMBLE" : "SUBSEQUENT PREAMBLE";
   const params = {
     tableName,
-    tableDocumentation,
+    tableDocumentation: tableDocumentation || "No documentation provided.",
     question,
     initialData,
   };
@@ -48,10 +48,9 @@ async function getAssertion(tableName, tableDocumentation, question, questionInd
         : "What is your response? ";
     const input = await options.promptUser(message);
 
-    if (
-      response.responseType === "ASSERTION" &&
-      (input.toLowerCase() === "yes" || input.toLowerCase() === "y")
-    ) {
+    // "yes", "YES!", "yes but for the record..." but not "yesterday I said no"
+    const yesRegex = /^yes(\W|$)/i;
+    if (response.responseType === "ASSERTION" && yesRegex.test(input)) {
       options.sendMessage("Great! I'm glad you agree.");
       assertions.push(
         "QUESTION",
@@ -70,8 +69,8 @@ async function getAssertion(tableName, tableDocumentation, question, questionInd
   }
 }
 
-export default async function investigate(tableName, tableDocumentation, options) {
-  const questionText = await getPrompt("investigate", "QUESTIONS", options);
+export default async function investigate(type, tableName, tableDocumentation, options) {
+  const questionText = await getPrompt(`investigate-${type}`, "QUESTIONS", options);
   const questions = questionText.split("\n*****");
   for (let i = 0; i < questions.length; i++) {
     await getAssertion(tableName, tableDocumentation, questions[i], i, options);

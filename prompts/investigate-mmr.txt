@@ -1,0 +1,9 @@
+## QUESTIONS
+
+The key date fields in MMR files are the payment date and the payment/adjustment start and end dates. A run date is often present as well, which if present is typically a few weeks before the payment date. 
+
+The payment/adjustment start and end dates define the period being reported on. This data is typically transactional, and the payment and run dates represent this transactionality. In other words, CMS is contantly updating and adjusting the same historical periods it has already reported on, when new information such as an updated RAF score prompts an alteration to the payment. As a result, the same payment/adjustment start date should have several records, each with different payment dates. Conversely, a single payment date for a member/plan will generally state or restate many periods.
+
+The span between the payment/adjustment start and end dates is often a month, but most MMR files have some periods of longer duration, such as a six-month span. Sometimes the file has been pre-processed to chunk up all the periods into one-month chunks. In this circumstance the payment/adjustment end date is sometimes omitted from the data feed, because it is assumed to be exactly a month after the payment/adjustment start date.
+
+Are all four of these fields present? Identify the ones that are present.

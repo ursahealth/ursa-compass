@@ -27,12 +27,13 @@ There are three ways to use Ursa Copilot.
 The git repo of Ursa Copilot ships with a sample implementation in Next.js, which can be run locally on your workstation, as follows:
 
 ```
+ $ (cd engine && npm install)
  $ cd nextjs-app
  $ npm install
  $ npm run dev
 ```
 
-You can edit the prompts in the `prompts` directory to fit your workflow.
+You will want to set DATABASE_TYPE and TARGET_DATABASE_URL in `/nextjs-app/.env.local`. You can edit the prompts in the `prompts` directory to fit your workflow.
 
 #### Integrate Ursa Copilot into your application
 
@@ -50,7 +51,7 @@ const options = {
         sendLogToUser(contents);
     },
     prompts: {
-        investigate: "Override prompt text"
+        "investigate-pharmacy": "Override prompt text"
     },
     promptUser: async (message) => {
         const userResponse = await waitForSocketResponse();
@@ -64,7 +65,7 @@ const options = {
         sendMessageToUser(type || "message", { text: message });
     }
 }
-await investigate(tableName, existingDocumentation, options);
+await investigate("pharmacy", tableName, existingDocumentation, options);
 ```
 
 #### Use Ursa Studio
