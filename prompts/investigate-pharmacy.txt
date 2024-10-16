@@ -13,10 +13,10 @@ If there are multiple plausible candidates for any of these fields, please enume
 *****
 
 Let’s take a look at these fields in order to determine the transactionality of this data. Order the data by patient ID, fill date, NDC code, and claim number. Typically, each patient ID + fill date + NDC trio represents the natural key for a unique claim. However, there are sometimes multiple rows per claim, to represent reversals or adjustments.
-Ideally, reversals and adjustments are clearly shown by having multiple rows per claim ID with a sensible progression of adjustment codes, incremental paid amounts, and different paid dates. 
+Ideally, reversals and adjustments are clearly shown by having multiple rows per claim ID with a sensible progression of adjustment codes, increase-to paid amounts, and different paid dates. 
 Things to watch out for include
 -	pure duplicates in the data, with the same claim number, paid date, and paid amount
--	restated paid amounts instead of incremental paid amounts, which would be indicated by never seeing any negative paid amounts
+-	resultant paid amounts instead of increase-to paid amounts, which would be indicated by never seeing any negative paid amounts
 -	claim number that vary within the natural key of patient ID + fill date + NDC, which can indicate that the field being called the claim number is actually more of a transaction ID.
 
 *****
@@ -34,7 +34,7 @@ If any claim numbers are returned, we’ll want to see all the fields for a pair
 
 *****
 
-It would similarly be instructive to see if there are claims that have both positive and negative paid amounts. If no claims have both positives and negatives, either we’re operating on the restate standard, or the field called claim number is actually a transaction ID.
+It would similarly be instructive to see if there are claims that have both positive and negative paid amounts. If no claims have both positives and negatives, either we’re operating on the resultant standard, or the field called claim number is actually a transaction ID.
 
 ```
 select claim_number, min(paid_amt), max(paid_amt)
@@ -52,7 +52,7 @@ Are there any fields representing adjustment flags, denied codes, denied reasons
 
 *****
 
-There should be fields representing "days supply" and "quantity dispensed". Can you find these fields. If the paid amount goes negative on reversals or some adjustments, verify that these field track negative as well. If, instead, the paid amount is restated, verify that "days supply" and "quantity dispensed" also appear to be restated.
+There should be fields representing "days supply" and "quantity dispensed". Can you find these fields. If the paid amount goes negative on reversals or some adjustments, verify that these field track negative as well. If, instead, the paid amount is resultant, verify that "days supply" and "quantity dispensed" also appear to be resultant.
 
 *****
 

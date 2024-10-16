@@ -18,9 +18,9 @@ Some questions to answer are: is the field that we believe to be the claim ID ac
 
 *****
 
-If the data is transactional, there are two main standards: restated or incremental. For example if a claim originally comes over for 100.00 and is later revised to 80.00, a restated-style standard will simply send another row of data with 80.00. On the other hand, an incremental-style standard will send a -20.00, or possibly a -100.00 followed by an 80.00. What standard are we using here? The presence of negative numbers in the paid amount tends to indicate an incremental standard.
+If the data is transactional, there are two main standards: resultant or increase-to. For example if a claim originally comes over for 100.00 and is later revised to 80.00, a resultant-style standard will simply send another row of data with 80.00. On the other hand, an increase-to-style standard will send a -20.00, or possibly a -100.00 followed by an 80.00. What standard are we using here? The presence of negative numbers in the paid amount tends to indicate an increase-to standard.
 
-That said, sometimes the data is buggy or poorly formed. Sometimes the source data simply repeats the lines with every update, sending the exact same amounts paid many times. This isn't great but we can treat it with the "restated" standard. It's worth interrogating the data to see if the transactions reliably "make sense" given our assumption. 
+That said, sometimes the data is buggy or poorly formed. Sometimes the source data simply repeats the lines with every update, sending the exact same amounts paid many times. This isn't great but we can treat it with the "resultant" standard. It's worth interrogating the data to see if the transactions reliably "make sense" given our assumption. 
 
 
 *****
