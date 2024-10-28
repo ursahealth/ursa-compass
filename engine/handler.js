@@ -2,7 +2,7 @@ import _ from "lodash";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import query from "./query.js";
 
-const bedrockClient = new BedrockRuntimeClient({});
+const bedrockClients = {};
 
 /*
   Check the first row of the response for keywords
@@ -51,7 +51,14 @@ async function queryAI(conversation, options = {}) {
   };
 
   const command = new InvokeModelCommand(params);
-  const response = await bedrockClient.send(command);
+
+  if (!bedrockClients[options.region || "default"]) {
+    bedrockClients[options.region || "default"] = new BedrockRuntimeClient(
+      options.region ? { region: options.region } : {}
+    );
+  }
+
+  const response = await bedrockClients[options.region || "default"].send(command);
   if (!response.body) {
     throw new Error("No response body from AI model.");
   }
@@ -122,11 +129,7 @@ export default async function handler(text, options) {
       );
     } else if (responseType === "QUERY_DATABASE") {
       const { result } = await trySql(response, options);
-      addToConversation(
-        "user",
-        `Result is: \n\`\`\`\n${JSON.stringify(result)}\n\`\`\``,
-        options
-      );
+      addToConversation("user", `Result is: \n\`\`\`\n${JSON.stringify(result)}\n\`\`\``, options);
     } else {
       return { responseType, text: response };
     }
