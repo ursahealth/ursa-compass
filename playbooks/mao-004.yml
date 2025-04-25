@@ -1,0 +1,59 @@
+interrogation_playbook:
+  goal: Understand structure, content, identifiers, transactionality, and data generation process of MAO-004 encounter data.
+  steps:
+    - step: identify_patient_and_encounter_information
+      goal: Determine patient and encounter identifiers and locate other key fields.
+      checks:
+        - check: Identify potential patient identifier fields (e.g., mbi, member_number). Assess reliability, population rate, and potential inconsistency (e.g., member_number missing on older records). Determine primary source_local_patient_id strategy.
+        - check: Identify the main Encounter Identifier (often encounter_icn or similar). This typically acts as the transaction ID in standard MAO-004.
+        - check: Identify the Encounter Linking Identifier (e.g., icn_encounter_link, previous_icn) which points to the prior transaction in the chain. Check if it's consistently populated for non-original encounters.
+        - check: Check if an 'Original Encounter ID' field exists, distinct from the linking ID.
+        - check: Identify Service Date fields (start/end). Note format.
+        - check: Identify Submission Date field (when plan submitted to CMS). Note format. Crucial for deadline checks.
+        - check: Identify Report Date field (date associated with the MAO-004 report generation). Note format. Check for multiple report dates within a single file (indicates catch-up/combined reports).
+
+    - step: identify_core_mao_fields
+      goal: Locate key fields describing the encounter type, diagnoses, and statuses.
+      checks:
+        - check: Locate Diagnosis Code fields (ICD-10-CM). Determine format (wide vs. long). GIM typically expects long form. Note field names (e.g., diag_code_1, diag_code_2... or a single diag_code field).
+        - check: Locate Encounter Type / Switch Type field. Profile distinct values (Expect 1:Original, 2:Void/Reversal, 3:Replacement, 4:Chart Review Add, 7:Chart Review Delete, others?).
+        - check: Locate CMS Status field (e.g., cms_status, risk_adj_ind). Profile distinct values (Allowed/Disallowed). Note if this status applies at encounter or diagnosis level.
+        - check: Locate Plan Status field (e.g., add_delete_flag). Profile distinct values (Add/Delete). Note if this applies at encounter or diagnosis level.
+        - check: Check for fields indicating encounter scope (e.g., 'is_encounter_level_update'). This helps distinguish full replacements (Type 3) from diagnosis-specific changes (Type 4, 7).
+
+    - step: determine_transactionality_and_reconciliation_logic
+      goal: Confirm transactional nature and understand the update/reconciliation mechanism.
+      method:
+        - type: case_review
+          sort_by: [patient_id, original_encounter_id_if_exists, service_start_date, report_date, submission_date, encounter_icn] # Sort to view transaction chains
+          display_fields: [patient_id, service_start_date, encounter_icn, linking_id_field, encounter_type_field, cms_status_field, plan_status_field, diagnosis_code_field(s), report_date, submission_date]
+          row_limit: 100 # Focus on a single original encounter and its subsequent transactions
+      checks:
+        - check: Confirm transactional nature by tracing updates using linking IDs and encounter types. Verify that updates point correctly to previous transactions.
+        - check: Analyze the relationship between Encounter Type, CMS Status, and Plan Status. (e.g., Does Type 2 Void result in a Disallowed CMS Status? Does Type 7 Delete align with a missing diagnosis on subsequent replacements?).
+        - check: Determine how updates are applied:
+            - Are Type 3 replacements encounter-wide (replace *all* previous diagnoses for that encounter)?
+            - Are Type 4/7 changes diagnosis-specific (only add/delete the specified diagnoses)?
+        - check: Reconstruct transaction chains for specific encounters. Follow the `linking_id_field` backward from the latest transaction (by report/submission date) to the original (Type 1).
+        - check: Identify the 'final action' record(s) for each diagnosis within an encounter. In the Ursa standard approach, this involves finding records with no *subsequent* linked transaction pointing *to* them (i.e., no 'next_icn').
+        - check: Look for anomalies:
+            - Multiple transactions pointing back to the same original encounter (possible branching).
+            - Encounter types seeming inconsistent with status flags (e.g., a 'Delete' type with 'Add' status flags).
+            - Replacements (Type 3) pointing back to the original encounter instead of the immediately preceding one.
+
+    - step: assess_data_quality_and_consistency
+      goal: Identify potential issues specific to MAO-004 data.
+      checks:
+        - check: Check for diagnosis codes in expected format (ICD-10-CM).
+        - check: Verify integrity of transaction links (e.g., do linked IDs exist?).
+        - check: Check consistency between encounter type and presence/absence of linking ID (e.g., Type 1 should have null linking ID).
+        - check: Assess consistency of patient identifiers (MBI/Member Number) across transactions for the same encounter chain.
+        - check: Look for missing critical fields (Encounter ICN, Service Dates, Diagnosis Code, Encounter Type).
+        - check: Check if CMS Allowed/Disallowed status makes sense in context (e.g., are diagnostic test claims consistently disallowed?).
+
+    - step: understand_data_generating_process_revisited
+      goal: Solidify understanding of MAO-004 source (raw CMS vs. payer curated) and delivery method.
+      checks:
+        - check: Determine if the file structure matches standard CMS MAO-004 (transactional, typically long-form diagnosis) or if it's been modified by the payer (e.g., converted to wide-form, curated to final action, restated).
+        - check: If restated, determine how deletions are handled (silenced records vs. explicit void transactions). Standard MAO-004 uses explicit voids (Type 2). If silenced, complex restatement logic may be needed.
+        - check: Check for presence of multiple report dates or submission dates within a single file delivery, suggesting combined historical reports requiring careful sequencing.

@@ -1,0 +1,81 @@
+interrogation_playbook:
+  goal: Understand structure, content, identifiers, payment conventions, and data generation process of incoming pharmacy claims data.
+  steps:
+    - step: identify_patient_and_provider_information
+      goal: Determine patient, prescribing provider, and filling provider identifiers.
+      checks:
+        - check: Identify potential patient identifier fields (e.g., member_id, patient_id, mbi). Assess reliability and consistency. Determine primary source_local_patient_id candidate.
+        - check: Identify Prescribing Provider identifier fields (e.g., prescribing_provider_npi, prescriber_id). Note identifier type (usually NPI). Check format (10 digits).
+        - check: Identify Filling Provider (Pharmacy) identifier fields (e.g., filling_provider_npi, pharmacy_npi, pharmacy_number). Note identifier type (usually NPI). Check format (10 digits). Assess potential mix of identifier types (e.g., some invalid codes like 'NA', 'UN').
+          query: |
+            -- Check length distribution of pharmacy identifier field
+            SELECT pharmacy_id_length, COUNT(*)
+            FROM (SELECT LENGTH(pharmacy_identifier_field) as pharmacy_id_length FROM my_pharmacy_claims_table)
+            GROUP BY pharmacy_id_length
+            ORDER BY pharmacy_id_length;
+        - check: Check population rates for all identifier fields.
+
+    - step: identify_core_pharmacy_claim_fields
+      goal: Locate key fields describing the dispensed drug, fill details, and timing.
+      checks:
+        - check: Locate National Drug Code (NDC) field. Verify format (expect 11 digits, ideally no dashes).
+        - check: Locate Fill Date field. Note date mask format.
+        - check: Locate Days Supply field. Check for validity (e.g., generally > 0 for non-reversals). Assess reliability.
+        - check: Locate Quantity Dispensed field.
+        - check: Locate Prescription Number and Refill Number fields (if available).
+        - check: Locate Drug Name / Description field (if available).
+        - check: Locate relevant Date fields (fill_date, paid_date, transaction_effective_date, submitted_date, report_date). Note formats.
+        - check: Check for Part B vs. Part D indicator flag. If absent, note that distinction might be impossible or require unreliable imputation.
+
+    - step: determine_transactionality_and_identify_keys
+      goal: Confirm pharmacy claims are transactional and identify Claim ID, Transaction ID.
+      method:
+        - type: case_review
+          sort_by: [patient_id, ndc, fill_date, potential_claim_id_or_transaction_id, transaction_date] # Use natural key + transaction date
+          display_fields: [patient_id, ndc, fill_date, days_supply, quantity_dispensed, paid_amount, transaction_id_field, transaction_date_field, reversal_indicator_field, claim_reference_number]
+          row_limit: 100 # Review fills for a specific drug/patient
+      checks:
+        - check: Confirm transactional nature by observing multiple records for the same logical fill (Patient+NDC+FillDate) across different transaction/report dates.
+        - check: Identify the best field for Transaction ID. Often the source `claim_number` or similar field functions as this. Check if it's unique per update.
+        - check: Identify the best fields for constructing a stable Claim ID (often a natural key). Recommended: [patient_id] + [ndc] + [fill_date]. Prescription Number + Refill might be an alternative if available and reliable. Verify the chosen natural key correctly groups transactions related to the same logical fill.
+        - check: Check for transaction linking fields (e.g., `claim_reference_number`) that point to previous transactions, especially for reversals.
+        - check: Look for explicit reversal flags or codes (e.g., 'reversed transaction', 'reversal'). Profile distinct values.
+        - check: Investigate apparent duplicate Transaction IDs within the same file/report date. Often, only one record is "real" (non-zero Days Supply or Paid Amount), while others represent components (like water/syrup) or are $0 informational lines. Deduplication based on `days_supply` descending is often effective.
+          query: |
+            -- Check for Transaction IDs with multiple records having non-zero Days Supply on the same report date
+            SELECT COUNT(*) as should_be_low_or_zero
+            FROM (
+              SELECT transaction_id_field, report_date_field
+              FROM my_pharmacy_claims_table
+              WHERE days_supply_field > 0 OR days_supply_field is null -- Handle potential nulls if they mean valid
+              GROUP BY transaction_id_field, report_date_field
+              HAVING COUNT(*) > 1
+            ) subquery;
+        - check: Look for coupon/rebate patterns (e.g., a large positive transaction paired with a smaller negative one for the same fill, often reversed together).
+
+    - step: understand_financial_conventions
+      goal: Determine financial conventions (Increase-to vs. Resulting) and identify key amounts.
+      checks:
+        - check: Determine payment convention. Pharmacy claims often use 'Increase-to'. Look for negative paid amounts corresponding to reversals or downward adjustments. Confirm mathematical consistency across transaction chains.
+        - check: Identify Plan Paid amount field.
+        - check: Identify Patient Responsibility amount field (may include copay, coinsurance, deductible components).
+        - check: Identify Allowed Amount field (if available).
+        - check: Look for specific cost components if available (ingredient_cost, dispensing_fee, sales_tax). Understand if these represent allowed amounts or plan/patient paid portions.
+        - check: Note any inconsistencies or potential data quality issues in financial reporting (e.g., reversals with positive dollar amounts).
+
+    - step: assess_data_quality_and_consistency
+      goal: Identify potential issues specific to pharmacy claims data.
+      checks:
+        - check: Check NDC validity and format consistency (target 11 digits, no dashes).
+        - check: Check Days Supply validity (usually > 0). Are there excessive numbers of 0-day supply fills?
+        - check: Check Quantity Dispensed consistency with Days Supply and drug type.
+        - check: Check Provider NPI formats (Prescribing and Filling) – expect 10 digits. Identify and handle invalid codes.
+        - check: Assess consistency of transaction linkage fields (e.g., do reversals correctly point to the transaction being reversed?).
+        - check: Check for consistency between reversal flags/codes and negative paid amounts.
+
+    - step: understand_data_generating_process_revisited
+      goal: Solidify understanding of how pharmacy claims data arrives.
+      checks:
+        - check: Confirm DGP (likely Transactional/Incremental for standard feeds, but payer-provided files might be curated/restated/final action).
+        - check: If restated, assess how reversals/deletions are handled (explicit transaction vs. silent disappearance). Determine if simple deduplication is sufficient or if full restatement logic is needed.
+        - check: Note any evidence of data curation or filtering by the source (e.g., excluding $0 informational lines, providing only final action).

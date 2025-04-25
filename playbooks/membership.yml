@@ -1,0 +1,62 @@
+interrogation_playbook:
+  goal: Understand structure, content, identifiers, enrollment representation, and data generation process of incoming membership/eligibility data.
+  steps:
+    - step: identify_patient_plan_provider_information
+      goal: Determine patient, plan, and attributed provider identifiers.
+      checks:
+        - check: Identify potential patient identifier fields (e.g., member_id, patient_id, mbi, subscriber_id). Assess reliability and consistency. Determine primary source_local_patient_id candidate. Note potential overlap/discrepancy with MMR/Claims IDs.
+        - check: Identify Plan identifier components (e.g., contract_number, pbp_number, segment_id, plan_name, product_code, group_id, subgroup_id). Note consistency and which components define a unique plan/product. Decide on standard construction for source_local_plan_id (Recommend Contract+PBP, excluding Segment ID initially).
+        - check: Identify Attributed Provider fields (e.g., pcp_npi, pcp_id, attributed_tin, provider_group_id). Note identifier types (NPI vs. TIN vs. other). Distinguish individual vs. group attribution if possible. Check population rates.
+        - check: Identify any other relevant demographic fields present (dob, gender, address).
+
+    - step: determine_enrollment_representation
+      goal: Understand how enrollment periods are defined.
+      checks:
+        - check: Identify Enrollment Date fields (e.g., effective_date, start_date, end_date, term_date). Note formats.
+        - check: Determine Grain - Does each record represent a continuous enrollment span (start/end dates) or a specific point in time/month (e.g., member_month file)?
+        - check: How are open-ended enrollments handled? (e.g., Null end date, '9999-12-31' end date).
+        - check: How are enrollment gaps represented? (Explicit term date followed by new start date, or simply non-contiguous records?).
+        - check: Are enrollment dates precise (day-level) or month/year level? Note implications for gap analysis (e.g., HEDIS rules).
+        - check: Check for multiple potentially overlapping enrollment records for the same patient/plan.
+
+    - step: understand_data_generating_process_dgp
+      goal: Determine if data is transactional, final action restated, or incremental, and how updates/terminations occur. (CRITICAL for Membership).
+      method:
+        - type: case_review
+          sort_by: [patient_id, plan_id, enrollment_start_date, file_effective_date_or_load_id] # Sort to view history of a specific enrollment episode
+          display_fields: [patient_id, plan_id, enrollment_start_date, enrollment_end_date, attributed_pcp_npi, attributed_group_tin, file_effective_date_or_load_id, any_status_flags]
+          row_limit: 100 # Focus on patients with multiple records/changes
+      checks:
+        - check: Does the file represent the 'current state' only, potentially dropping historical enrollment episodes? (Common issue). If so, note that the file cannot be the sole source of truth for historical membership.
+        - check: How are changes reflected across file deliveries?
+            - Scenario A (Restated - Current Episode Only): Only the latest enrollment span appears in newer files; history is lost.
+            - Scenario B (Restated - Full History): All historical spans for a patient are resent in each new file, possibly with updated attributes or end dates.
+            - Scenario C (Incremental/Transactional): Only changes or new records are sent. Requires careful reconciliation. (Less common for eligibility).
+        - check: How are terminations/disenrollments handled?
+            - Option 1 (Explicit Term Date): A record is updated with a valid term_date.
+            - Option 2 (Silent Disappearance - Requires Restatement Logic): Records for termed periods simply stop appearing in subsequent restated files. Cannot reliably determine term date without comparing file footprints.
+            - Option 3 (Reversal Transaction): An explicit transaction indicates disenrollment (Rare for eligibility).
+        - check: Identify the file metadata source (e.g., File Ingestion Log table, date embedded in filename). Is information on file scope (market/cohort) and effective date available? Needed for Scenario B/Option 2 (Restatement with silent deletes).
+      branching_logic:
+        - condition: DGP appears Restated WITH Silent Deletions (Scenario B, Option 2)
+          next_steps:
+            - note: Requires complex "Cadillac" restatement logic using file metadata (scope, effective date) to correctly identify termed periods. Cannot rely solely on latest record per patient/plan.
+            - check: Verify availability and reliability of file metadata (scope and effective date).
+        - condition: DGP appears Restated but only shows Current Episode (Scenario A)
+          next_steps:
+            - note: Cannot be used as sole source for historical membership. Must be interleaved with other sources (like MMR) to establish true enrollment periods. Can use simple deduplication (keep latest record per patient/plan/start_date) to get attributes for the *latest known* span.
+        - condition: DGP appears Transactional or Incremental (Scenario C or other)
+          next_steps:
+            - note: Requires standard transaction reconciliation logic. Identify transaction keys and sequence. Less common for eligibility files.
+        - condition: DGP appears Final Action Restated with Explicit Term Dates
+          next_steps:
+            - note: Simplest case. Can use simple deduplication - keep the latest record per patient/plan based on file effective date.
+
+    - step: assess_data_quality_and_consistency
+      goal: Identify potential issues specific to membership/eligibility data.
+      checks:
+        - check: Check for overlapping enrollment periods for the *same* patient and *same* plan ID (after standardizing plan ID). This should generally not occur.
+        - check: Investigate non-contiguous enrollment periods with small gaps (e.g., 1-2 days) - could be data errors or valid weekend/holiday gaps. Consider need for fuzzy joining logic later.
+        - check: Verify consistency of attributed providers or plan details across different records supposedly covering the same enrollment period.
+        - check: Check for missing critical fields (Patient ID, Plan ID components, Start Date).
+        - check: Compare enrollment periods and attributes (like PCP) with other sources (e.g., MMR) if available, looking for discrepancies.
