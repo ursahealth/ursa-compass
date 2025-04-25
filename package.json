@@ -15,6 +15,7 @@
   ],
   "scripts": {
     "build": "rollup -c",
+    "build:ui": "rollup -c rollup.ui.config.js",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -29,9 +30,14 @@
   },
   "homepage": "https://github.com/ursahealth/ursa-copilot#readme",
   "devDependencies": {
+    "@babel/preset-react": "^7.26.3",
+    "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^26.0.1",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
-    "rollup": "^4.20.0"
+    "@rollup/plugin-typescript": "^12.1.2",
+    "rollup": "^4.20.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2"
   }
 }
