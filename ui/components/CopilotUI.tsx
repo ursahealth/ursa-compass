@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { OutlineNav } from "./OutlineNav";
 import { MainPanel } from "./MainPanel";
 import { PlaybookPanel } from "./PlaybookPanel";
+import { SessionNav } from "./SessionNav";
 
 /*
 export interface CopilotUIProps {
@@ -115,27 +116,12 @@ export const CopilotUI = () => {
       <div className="flex h-full w-full flex-1 flex-col justify-between">
         <div className="flex h-screen overflow-hidden">
           {/* Left Sidebar */}
-          <div className="min-w-40 w-60 bg-gray-100 p-2 border-r overflow-y-auto text-[16px]">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold">Sessions</h3>
-              <button onClick={createNewSession} className="text-sm text-blue-500">
-                + New
-              </button>
-            </div>
-            <ul>
-              {sessions.map((session) => (
-                <li
-                  key={session.uuid}
-                  className={`p-2 rounded cursor-pointer text-[14px] ${
-                    session.uuid === activeSessionId ? "bg-white shadow" : ""
-                  }`}
-                  onClick={() => setActiveSessionId(session.uuid)}
-                >
-                  {session.name}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <SessionNav
+            activeSessionId={activeSessionId}
+            createNewSession={createNewSession}
+            sessions={sessions}
+            setActiveSessionId={setActiveSessionId}
+          />
 
           {/* Main Content */}
           <div className="flex-1 p-4 overflow-y-auto">

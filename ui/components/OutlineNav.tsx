@@ -1,4 +1,3 @@
-import { __Client } from "@aws-sdk/client-bedrock-agent-runtime";
 import { Playbook } from "./types";
 
 export const OutlineNav = ({
