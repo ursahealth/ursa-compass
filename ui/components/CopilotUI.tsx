@@ -1,4 +1,4 @@
-import { Check, Parsed, Playbook, Session, Step } from "./types";
+import { Parsed, Playbook, Session, Step } from "./types";
 import { useEffect, useState } from "react";
 import { OutlineNav } from "./OutlineNav";
 import { MainPanel } from "./MainPanel";
@@ -59,7 +59,6 @@ export function parsePlaybookYaml(src: string): Parsed {
     }
   }
 
-  console.log("play", playbook);
   return playbook;
 }
 
@@ -111,6 +110,18 @@ export const CopilotUI = () => {
     setActiveSessionId(uuid);
   };
 
+  const renameSession = (sessionId: string, newName: string) => {
+    const session = sessions.find((s) => s.uuid === sessionId);
+    if (session) {
+      const updatedSession = Object.assign(session, { name: newName });
+      setSessions(sessions.map((s) => (s.uuid === sessionId ? updatedSession : s)));
+    }
+  };
+
+  const deleteSession = (sessionId: string) => {
+    setSessions(sessions.filter((s) => s.uuid !== sessionId));
+  };
+
   return (
     <div className="flex h-full w-full flex-row justify-between">
       <div className="flex h-full w-full flex-1 flex-col justify-between">
@@ -119,6 +130,8 @@ export const CopilotUI = () => {
           <SessionNav
             activeSessionId={activeSessionId}
             createNewSession={createNewSession}
+            deleteSession={deleteSession}
+            renameSession={renameSession}
             sessions={sessions}
             setActiveSessionId={setActiveSessionId}
           />
