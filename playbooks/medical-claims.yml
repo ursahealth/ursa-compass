@@ -1,4 +1,4 @@
-interrogation_playbook:
+playbook:
   goal: Understand structure, content, identifiers, and data generation process of incoming medical claims data.
   steps:
     - step: identify_patient_information

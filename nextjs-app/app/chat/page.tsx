@@ -13,7 +13,6 @@ import { io, Socket } from "socket.io-client";
 
 import { useEffect, useRef, useState } from "react";
 import ChatContent from "../ui/chat/chat-content";
-import { CopilotUI } from "../../../ui/esm";
 
 let socket: Socket;
 

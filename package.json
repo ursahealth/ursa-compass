@@ -14,6 +14,7 @@
     "prompts"
   ],
   "scripts": {
+    "dev:ui": "rollup -c rollup.ui.config.js --watch",
     "build": "rollup -c",
     "build:ui": "rollup -c rollup.ui.config.js",
     "prepublishOnly": "npm run build",

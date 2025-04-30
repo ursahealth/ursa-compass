@@ -1,58 +1,190 @@
-import React from "react";
+import { Check, Parsed, Playbook, Session, Step } from "./types";
+import { useEffect, useState } from "react";
+import { OutlineNav } from "./OutlineNav";
+import { MainPanel } from "./MainPanel";
+import { PlaybookPanel } from "./PlaybookPanel";
 
+/*
 export interface CopilotUIProps {
   userId: string;
   onSendMessage: (message: string) => void;
   messages: { sender: "user" | "assistant"; text: string }[];
 }
+*/
 
-export const CopilotUI: React.FC<CopilotUIProps> = ({
-  userId,
-  messages,
-  onSendMessage,
-}) => {
-  const [input, setInput] = React.useState("");
+function generateDefaultSessionName(date = new Date()) {
+  const timeString = date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `Session ${date.toLocaleDateString()} ${timeString}`;
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    onSendMessage(input.trim());
-    setInput("");
+export function parsePlaybookYaml(src: string): Parsed {
+  const lines = src.replace(/\r\n?/g, "\n").split("\n");
+
+  const playbook: Playbook = { filename: "", goal: "", rawContent: src, steps: [] };
+  let currentStep: Step | null = null;
+
+  for (let raw of lines) {
+    const line = raw.replace(/\t/g, "  "); // tabs → spaces
+    if (!line.trim() || line.trim().startsWith("#")) continue; // skip blank/comment
+
+    // LEVEL 0  (playbook key ignored – we start inside it)
+    if (line.startsWith("  goal:")) {
+      playbook.goal = line.split(/goal:\s*/)[1];
+      continue;
+    }
+
+    // LEVEL 1 – new step
+    if (line.trim().startsWith("- step:")) {
+      const name = line.split(/- step:\s*/)[1];
+      currentStep = { name, goal: "", checks: [] };
+      playbook.steps.push(currentStep);
+      continue;
+    }
+
+    // LEVEL 2 – step.goal
+    if (line.startsWith("    goal:") && currentStep) {
+      currentStep.goal = line.split(/goal:\s*/)[1];
+      continue;
+    }
+
+    // LEVEL 3 – new check
+    if (line.trim().startsWith("- check:") && currentStep) {
+      const text = line.split(/- check:\s*/)[1];
+      currentStep.checks.push({ check: text });
+      continue;
+    }
+  }
+
+  console.log("play", playbook);
+  return playbook;
+}
+
+export const CopilotUI = () => {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [activePlaybookName, setActivePlaybookName] = useState<Playbook | null>(null);
+  const [playbooks, setPlaybooks] = useState<any[]>([]);
+  const [focus, setFocus] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadPlaybooks() {
+      const response = await fetch("/api/get-playbooks");
+      const data = await response.json();
+      const playbooks = data.map((file: { filename: string; content: string }) => {
+        try {
+          const parsed = parsePlaybookYaml(file.content);
+          return {
+            filename: file.filename,
+            rawContent: file.content,
+            steps: parsed.steps,
+          };
+        } catch (error) {
+          console.error(`Error parsing playbook ${file.filename}:`, error);
+          return null;
+        }
+      });
+      setPlaybooks(playbooks);
+    }
+
+    loadPlaybooks();
+  }, []);
+
+  const activeSession = sessions.find((s) => s.uuid === activeSessionId);
+  const activePlaybook = playbooks.find((pb) => pb.filename === activePlaybookName) || null;
+
+  const createNewSession = () => {
+    const now = new Date();
+    const uuid = crypto.randomUUID();
+    const newSession: Session = {
+      uuid,
+      name: generateDefaultSessionName(now),
+      createdAt: now.toISOString(),
+      prompt: "",
+      playbookYaml: "",
+      tableName: null,
+    };
+    setSessions([...sessions, newSession]);
+    setActiveSessionId(uuid);
   };
 
   return (
-    <div className="p-4 rounded-xl shadow-md max-w-xl mx-auto border">
-      <h2 className="text-xl font-semibold mb-4">Copilot Chat ({userId})</h2>
-      <div className="space-y-2 mb-4 max-h-80 overflow-y-auto">
-        {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={`p-2 rounded ${
-              msg.sender === "user"
-                ? "bg-blue-100 text-right"
-                : "bg-gray-100 text-left"
-            }`}
-          >
-            {msg.text}
+    <div className="flex h-full w-full flex-row justify-between">
+      <div className="flex h-full w-full flex-1 flex-col justify-between">
+        <div className="flex h-screen overflow-hidden">
+          {/* Left Sidebar */}
+          <div className="min-w-40 w-60 bg-gray-100 p-2 border-r overflow-y-auto text-[16px]">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-semibold">Sessions</h3>
+              <button onClick={createNewSession} className="text-sm text-blue-500">
+                + New
+              </button>
+            </div>
+            <ul>
+              {sessions.map((session) => (
+                <li
+                  key={session.uuid}
+                  className={`p-2 rounded cursor-pointer text-[14px] ${
+                    session.uuid === activeSessionId ? "bg-white shadow" : ""
+                  }`}
+                  onClick={() => setActiveSessionId(session.uuid)}
+                >
+                  {session.name}
+                </li>
+              ))}
+            </ul>
           </div>
-        ))}
+
+          {/* Main Content */}
+          <div className="flex-1 p-4 overflow-y-auto">
+            {!activeSession ? (
+              <p className="text-gray-500 text-center mt-8">Select or create a session to begin.</p>
+            ) : focus === "playbook" ? (
+              <PlaybookPanel
+                activePlaybook={activePlaybook}
+                playbooks={playbooks}
+                setActivePlaybookName={setActivePlaybookName}
+              />
+            ) : focus === "tableName" ? (
+              <div>
+                <h3 className="font-semibold mb-2">Table Name</h3>
+                <input
+                  type="text"
+                  placeholder="Enter table name"
+                  className="w-full p-2 border rounded"
+                  value={activeSession.tableName || ""}
+                  onChange={(e) => {
+                    const updatedSession = { ...activeSession, tableName: e.target.value };
+                    setSessions(
+                      sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s))
+                    );
+                  }}
+                />
+              </div>
+            ) : focus === "systemPrompt" ? (
+              <div>
+                <h3 className="font-semibold mb-2">TBD</h3>
+                Let users see and edit the system prompt
+              </div>
+            ) : (
+              <MainPanel session={activeSession} />
+            )}
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="w-[600px] flex-none overflow-y-auto overflow-x-hidden bg-gray-50 p-4 border-l text-[14px]">
+            {activeSession && (
+              <OutlineNav
+                setFocus={setFocus}
+                activePlaybook={activePlaybook}
+                tableName={activeSession.tableName}
+              />
+            )}
+          </div>
+        </div>
       </div>
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          type="text"
-          className="flex-1 border px-2 py-1 rounded"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message..."
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-3 py-1 rounded"
-        >
-          Send
-        </button>
-      </form>
     </div>
   );
 };
-
