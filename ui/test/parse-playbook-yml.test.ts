@@ -1,4 +1,7 @@
-playbook:
+import { describe, it, expect } from "vitest";
+import parseYML from "../util/parse-playbook-yml.ts";
+
+const testPlaybook = `playbook:
   goal: Understand structure, content, identifiers, and data generation process of incoming medical claims data.
   steps:
     - step: Determine primary patient identifier and other demographic fields.
@@ -31,19 +34,32 @@ playbook:
         - check: Verify harmonization between different indicators if multiple exist.
           description: |
             For example, 
-            ```
+            \`\`\`
             select count(*) as should_be_zero
             from my_claims_table
             where claim_type_code = 'I' -- Or equivalent institutional code
             and fac_type_code is not null
             and fac_type_code <> ''
-            ```
+            \`\`\`
             or
-            ```
+            \`\`\`
             select count(*) as should_be_zero
             from my_claims_table
             where claim_type_code = 'P' -- Or equivalent professional code
             and bill_type_code is not null
             and bill_type_code <> ''
-            ```
+            \`\`\`
         - check: Decide on the most reliable field(s) to determine claim class.
+`;
+
+describe("parsePlaybookYML", () => {
+  it("parses multiline description", () => {
+    const result = parseYML(testPlaybook);
+    expect(result.goal).toBe("Understand structure, content, identifiers, and data generation process of incoming medical claims data.");
+    expect(result.steps.length).toBe(2);
+    expect(result.steps[0].name).toBe("Determine primary patient identifier and other demographic fields.");
+    expect(result.steps[0].checks.length).toBe(6);
+    expect(result.steps[1].name).toBe("Distinguish Institutional vs. Professional claims.");
+    expect(result.steps[1].description).toContain(`How do we determine which rows are professional claims and which rows are institutional claims? Sometimes\nprofessional`);
+  });
+});

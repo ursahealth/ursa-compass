@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Session } from "./types";
+import { Session } from "../util/types";
 
 export const SessionNav = ({
   activeSessionId,

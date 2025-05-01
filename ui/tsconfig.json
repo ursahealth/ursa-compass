@@ -11,5 +11,5 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["components", "index.ts"]
+  "include": ["components", "index.ts", "util/types.ts"]
 }

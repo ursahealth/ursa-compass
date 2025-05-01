@@ -1,4 +1,4 @@
-import { Playbook, Session } from "./types";
+import { Playbook, Session } from "../util/types";
 
 export const PlaybookPanel = ({
   playbooks,

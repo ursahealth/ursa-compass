@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "rollup -c ../rollup.ui.config.js",
-    "dev": "rollup -c ../rollup.ui.config.js --watch"
+    "dev": "rollup -c ../rollup.ui.config.js --watch",
+    "test": "npx vitest run"
   }
 }

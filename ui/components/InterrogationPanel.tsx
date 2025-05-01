@@ -1,9 +1,11 @@
-import { Parsed, Playbook, Session, Step } from "./types";
+import { Playbook, Session, Step } from "../util/types";
 import { useEffect, useState } from "react";
 import { OutlineNav } from "./OutlineNav";
+import { CheckPanel } from "./CheckPanel";
 import { MainPanel } from "./MainPanel";
 import { PlaybookPanel } from "./PlaybookPanel";
 import { SessionNav } from "./SessionNav";
+import parsePlaybookYaml from "../util/parse-playbook-yml";
 
 /*
 export interface CopilotUIProps {
@@ -19,47 +21,6 @@ function generateDefaultSessionName(date = new Date()) {
     minute: "2-digit",
   });
   return `Session ${date.toLocaleDateString()} ${timeString}`;
-}
-
-export function parsePlaybookYaml(src: string): Parsed {
-  const lines = src.replace(/\r\n?/g, "\n").split("\n");
-
-  const playbook: Playbook = { filename: "", goal: "", rawContent: src, steps: [] };
-  let currentStep: Step | null = null;
-
-  for (let raw of lines) {
-    const line = raw.replace(/\t/g, "  "); // tabs → spaces
-    if (!line.trim() || line.trim().startsWith("#")) continue; // skip blank/comment
-
-    // LEVEL 0  (playbook key ignored – we start inside it)
-    if (line.startsWith("  goal:")) {
-      playbook.goal = line.split(/goal:\s*/)[1];
-      continue;
-    }
-
-    // LEVEL 1 – new step
-    if (line.trim().startsWith("- step:")) {
-      const name = line.split(/- step:\s*/)[1];
-      currentStep = { name, goal: "", checks: [] };
-      playbook.steps.push(currentStep);
-      continue;
-    }
-
-    // LEVEL 2 – step.goal
-    if (line.startsWith("    goal:") && currentStep) {
-      currentStep.goal = line.split(/goal:\s*/)[1];
-      continue;
-    }
-
-    // LEVEL 3 – new check
-    if (line.trim().startsWith("- check:") && currentStep) {
-      const text = line.split(/- check:\s*/)[1];
-      currentStep.checks.push({ check: text });
-      continue;
-    }
-  }
-
-  return playbook;
 }
 
 export const InterrogationPanel = () => {
@@ -94,7 +55,16 @@ export const InterrogationPanel = () => {
 
   const activeSession = sessions.find((s) => s.uuid === activeSessionId);
   const activePlaybook = playbooks.find((pb) => pb.filename === activePlaybookName) || null;
+  const activeStep =
+    activePlaybook && focus && (focus.startsWith("step-") || focus.startsWith("check-"))
+      ? activePlaybook.steps[Number(focus.split("-")[1])]
+      : null;
+  const activeCheck =
+    activeStep && focus && focus.startsWith("check-")
+      ? activeStep.checks[Number(focus.split("-")[2])]
+      : null;
 
+  console.log(activePlaybook);
   const createNewSession = () => {
     const now = new Date();
     const uuid = crypto.randomUUID();
@@ -167,6 +137,8 @@ export const InterrogationPanel = () => {
                 <h3 className="font-semibold mb-2">TBD</h3>
                 Let users see and edit the system prompt
               </div>
+            ) : activeCheck ? (
+              <CheckPanel session={activeSession} check={activeCheck} step={activeStep} />
             ) : (
               <MainPanel session={activeSession} />
             )}

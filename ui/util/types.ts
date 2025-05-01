@@ -8,13 +8,13 @@ export interface Session {
   playbookYaml: string;
   focusedStep?: string;
 }
-
 export interface Check {
-  check: string;
-  query?: string;
+  name: string;
+  description?: string;
 }
 export interface Step {
   name: string;
+  description?: string;
   goal: string;
   checks: Check[];
 }
@@ -22,8 +22,5 @@ export interface Playbook {
   filename: string;
   rawContent: string;
   goal: string;
-  steps: Step[];
-}
-export interface Parsed {
   steps: Step[];
 }

@@ -1,4 +1,4 @@
-import { Session } from "./types";
+import { Session } from "../util/types";
 
 export const MainPanel = ({ session }: { session: Session }) => {
   return (

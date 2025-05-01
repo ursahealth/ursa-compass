@@ -1,4 +1,4 @@
-import { Playbook } from "./types";
+import { Playbook } from "../util/types";
 
 export const OutlineNav = ({
   activePlaybook,
@@ -52,7 +52,7 @@ export const OutlineNav = ({
                     }}
                     className="cursor-pointer"
                   >
-                    {check.check}
+                    {check.name}
                   </span>
                 </li>
               ))}
