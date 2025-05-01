@@ -1,7 +1,7 @@
 "use client";
 
-import { CopilotUI } from "../../../ui/esm";
+import { InterrogationPanel } from "../../../ui/esm";
 
 export default function Page({}: {}) {
-  return <CopilotUI />;
+  return <InterrogationPanel />;
 }

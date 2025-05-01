@@ -1,7 +1,7 @@
 playbook:
   goal: Understand structure, content, identifiers, and data generation process of incoming medical claims data.
   steps:
-    - step: Determine primary patient identifier and locate other useful demographic fields.
+    - step: Determine primary patient identifier and other demographic fields.
       checks:
         - check: Identify potential patient identifier fields (e.g., member_id, patient_id, mbi, ssn).
         - check: Assess reliability and population consistency of identifier fields.

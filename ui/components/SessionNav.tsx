@@ -92,14 +92,14 @@ export const SessionNav = ({
                   e.stopPropagation(); // keep row-click from firing
                   setOpenMenuId(menuOpen ? null : s.uuid);
                 }}
-                className="p-1 -m-1 rounded hover:bg-gray-200 opacity-0 hover:opacity-100"
+                className="p-1 -m-1 rounded opacity-0 hover:opacity-100"
               >
                 {/* three horizontal lines (SVG) */}
                 <svg
                   className="w-5 h-5"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="1"
                   strokeLinecap="round"
                 >
                   <path d="M4 6h16M4 12h16M4 18h16" fill="none" />

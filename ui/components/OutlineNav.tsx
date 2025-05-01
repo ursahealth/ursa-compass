@@ -45,7 +45,7 @@ export const OutlineNav = ({
             </li>
             <ul key={`checks-${index}`} className="pl-4 pb-2">
               {step.checks.map((check, checkIndex) => (
-                <li className="pl-4" key={checkIndex}>
+                <li className="ml-4 border-b border-gray-400" key={checkIndex}>
                   <span
                     onClick={() => {
                       setFocus(`check-${index}-${checkIndex}`);

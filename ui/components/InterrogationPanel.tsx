@@ -62,7 +62,7 @@ export function parsePlaybookYaml(src: string): Parsed {
   return playbook;
 }
 
-export const CopilotUI = () => {
+export const InterrogationPanel = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [activePlaybookName, setActivePlaybookName] = useState<Playbook | null>(null);

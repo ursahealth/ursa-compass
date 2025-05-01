@@ -1,1 +1,1 @@
-export { CopilotUI } from "./components/CopilotUI";
+export { InterrogationPanel } from "./components/InterrogationPanel";
