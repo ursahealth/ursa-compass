@@ -5,6 +5,7 @@ import { CheckPanel } from "./CheckPanel";
 import { MainPanel } from "./MainPanel";
 import { PlaybookPanel } from "./PlaybookPanel";
 import { SessionNav } from "./SessionNav";
+import { TableNamePanel } from "./TableNamePanel";
 import parsePlaybookYaml from "../util/parse-playbook-yml";
 
 /*
@@ -64,7 +65,32 @@ export const InterrogationPanel = () => {
       ? activeStep.checks[Number(focus.split("-")[2])]
       : null;
 
-  console.log(activePlaybook);
+  const blurTableName = () => {
+    const tableName = activeSession?.tableName;
+    const updatedSession = Object.assign({}, activeSession, {
+      tableStatus: "UNDERWAY",
+      tableData: null,
+    });
+    setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
+    if (tableName) {
+      fetch(`/api/verify-table?tableName=${encodeURIComponent(tableName)}`)
+        .then((response) => response.json())
+        .then((data) => {
+          const updatedSession = Object.assign({}, activeSession, {
+            tableStatus: "SUCCESS",
+            tableData: data.results,
+            tableSql: data.sql
+          });
+          setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
+        })
+        .catch((error) => {
+          console.error("Error fetching table data:", error);
+          const updatedSession = Object.assign({}, activeSession, { tableStatus: "ERROR" });
+          setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
+        });
+    }
+  };
+
   const createNewSession = () => {
     const now = new Date();
     const uuid = crypto.randomUUID();
@@ -80,6 +106,10 @@ export const InterrogationPanel = () => {
     setActiveSessionId(uuid);
   };
 
+  const deleteSession = (sessionId: string) => {
+    setSessions(sessions.filter((s) => s.uuid !== sessionId));
+  };
+
   const renameSession = (sessionId: string, newName: string) => {
     const session = sessions.find((s) => s.uuid === sessionId);
     if (session) {
@@ -88,8 +118,9 @@ export const InterrogationPanel = () => {
     }
   };
 
-  const deleteSession = (sessionId: string) => {
-    setSessions(sessions.filter((s) => s.uuid !== sessionId));
+  const setTableName = (tableName: string) => {
+    const updatedSession = Object.assign({}, activeSession, { tableName });
+    setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
   };
 
   return (
@@ -117,21 +148,11 @@ export const InterrogationPanel = () => {
                 setActivePlaybookName={setActivePlaybookName}
               />
             ) : focus === "tableName" ? (
-              <div>
-                <h3 className="font-semibold mb-2">Table Name</h3>
-                <input
-                  type="text"
-                  placeholder="Enter table name"
-                  className="w-full p-2 border rounded"
-                  value={activeSession.tableName || ""}
-                  onChange={(e) => {
-                    const updatedSession = { ...activeSession, tableName: e.target.value };
-                    setSessions(
-                      sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s))
-                    );
-                  }}
-                />
-              </div>
+              <TableNamePanel
+                blurTableName={blurTableName}
+                session={activeSession}
+                setTableName={setTableName}
+              />
             ) : focus === "systemPrompt" ? (
               <div>
                 <h3 className="font-semibold mb-2">TBD</h3>
@@ -151,6 +172,7 @@ export const InterrogationPanel = () => {
                 setFocus={setFocus}
                 activePlaybook={activePlaybook}
                 tableName={activeSession.tableName}
+                tableStatus={activeSession.tableStatus}
               />
             )}
           </div>

@@ -3,6 +3,9 @@ export interface Session {
   uuid: string;
   name: string;
   tableName: string | null;
+  tableData?: any;
+  tableSql?: string | undefined;
+  tableStatus?: string | undefined;
   createdAt: string; // ISO string, used to generate default name
   prompt: string;
   playbookYaml: string;

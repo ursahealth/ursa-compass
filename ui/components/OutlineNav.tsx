@@ -1,13 +1,16 @@
+import React from "react";
 import { Playbook } from "../util/types";
 
 export const OutlineNav = ({
   activePlaybook,
   setFocus,
-  tableName
+  tableName,
+  tableStatus,
 }: {
   activePlaybook: Playbook;
   setFocus: Function;
   tableName: string | null;
+  tableStatus: string | undefined;
 }) => {
   function setFocusPlaybook() {
     setFocus("playbook");
@@ -27,15 +30,21 @@ export const OutlineNav = ({
         </li>
         <li className="cursor-pointer" onClick={setFocusTableName}>
           {tableName ? `Table: ${tableName}` : "Select Table Name"}
+          {tableStatus === "SUCCESS" ? (
+            <span className="text-green-500"> (Valid)</span>
+          ) : tableStatus === "UNDERWAY" ? (
+            <span className="text-yellow-500"> (Verifying...)</span>
+          ) : tableStatus === "ERROR" ? (
+            <span className="text-red-500"> (Invalid)</span>
+          ) : null}
         </li>
         <li className="cursor-pointer" onClick={setFocusPlaybook}>
           {activePlaybook ? "Playbook: " : "Select Playbook"}
           {activePlaybook?.filename || ""}
         </li>
         {activePlaybook?.steps.map((step, index) => (
-          <>
+          <React.Fragment key={index}>
             <li
-              key={index}
               onClick={() => {
                 setFocus(`step-${index}`);
               }}
@@ -57,7 +66,7 @@ export const OutlineNav = ({
                 </li>
               ))}
             </ul>
-          </>
+          </React.Fragment>
         ))}
       </ul>
     </div>
