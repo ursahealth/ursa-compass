@@ -4,10 +4,12 @@ export const CheckPanel = ({
   session,
   step,
   check,
+  startChat
 }: {
   session: Session;
   step: Step;
   check: Check;
+  startChat: Function
 }) => {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6 bg-white rounded-xl shadow-md border border-gray-200">
@@ -28,6 +30,7 @@ export const CheckPanel = ({
           <button
             type="button"
             className="px-4 py-2 bg-green-pine text-white rounded-md hover:bg-green-forest focus:outline-none focus:ring-2 focus:ring-green-pine"
+            onClick={() => startChat()}
           >
             Start AI Chat
           </button>

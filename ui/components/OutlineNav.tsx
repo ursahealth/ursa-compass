@@ -18,6 +18,9 @@ export const OutlineNav = ({
   function setFocusSystemPrompt() {
     setFocus("systemPrompt");
   }
+  function setFocusTableDocumentation() {
+    setFocus("tableDocumentation");
+  }
   function setFocusTableName() {
     setFocus("tableName");
   }
@@ -37,6 +40,9 @@ export const OutlineNav = ({
           ) : tableStatus === "ERROR" ? (
             <span className="text-red-500"> (Invalid)</span>
           ) : null}
+        </li>
+        <li className="cursor-pointer" onClick={setFocusTableDocumentation}>
+          Pre-Existing Table Documentation
         </li>
         <li className="cursor-pointer" onClick={setFocusPlaybook}>
           {activePlaybook ? "Playbook: " : "Select Playbook"}

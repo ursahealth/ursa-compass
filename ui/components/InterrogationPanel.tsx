@@ -7,6 +7,7 @@ import { PlaybookPanel } from "./PlaybookPanel";
 import { SessionNav } from "./SessionNav";
 import { TableNamePanel } from "./TableNamePanel";
 import parsePlaybookYaml from "../util/parse-playbook-yml";
+import populateSystemPrompt from "../util/populate-system-prompt";
 
 /*
 export interface CopilotUIProps {
@@ -30,6 +31,7 @@ export const InterrogationPanel = () => {
   const [activePlaybookName, setActivePlaybookName] = useState<Playbook | null>(null);
   const [playbooks, setPlaybooks] = useState<any[]>([]);
   const [focus, setFocus] = useState<string | null>(null);
+  const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadPlaybooks() {
@@ -37,12 +39,7 @@ export const InterrogationPanel = () => {
       const data = await response.json();
       const playbooks = data.map((file: { filename: string; content: string }) => {
         try {
-          const parsed = parsePlaybookYaml(file.content);
-          return {
-            filename: file.filename,
-            rawContent: file.content,
-            steps: parsed.steps,
-          };
+          return parsePlaybookYaml(file.filename, file.content);
         } catch (error) {
           console.error(`Error parsing playbook ${file.filename}:`, error);
           return null;
@@ -52,6 +49,16 @@ export const InterrogationPanel = () => {
     }
 
     loadPlaybooks();
+  }, []);
+
+  useEffect(() => {
+    async function loadPrompt() {
+      const response = await fetch("/api/get-system-prompt");
+      const data = await response.json();
+      setSystemPrompt(data.prompt);
+    }
+
+    loadPrompt();
   }, []);
 
   const activeSession = sessions.find((s) => s.uuid === activeSessionId);
@@ -79,7 +86,7 @@ export const InterrogationPanel = () => {
           const updatedSession = Object.assign({}, activeSession, {
             tableStatus: "SUCCESS",
             tableData: data.results,
-            tableSql: data.sql
+            tableSql: data.sql,
           });
           setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
         })
@@ -123,6 +130,23 @@ export const InterrogationPanel = () => {
     setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
   };
 
+  const setTableDocumentation = (tableDocumentation: string) => {
+    const updatedSession = Object.assign({}, activeSession, { tableDocumentation });
+    setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
+  };
+
+  const startChat = () => {
+    if (systemPrompt && activeSession) {
+      const populatedPrompt = populateSystemPrompt(
+        systemPrompt,
+        activeSession,
+        activePlaybook,
+        activeStep,
+        activeCheck
+      );
+    }
+  };
+
   return (
     <div className="flex h-full w-full flex-row justify-between">
       <div className="flex h-full w-full flex-1 flex-col justify-between">
@@ -153,13 +177,28 @@ export const InterrogationPanel = () => {
                 session={activeSession}
                 setTableName={setTableName}
               />
+            ) : focus === "tableDocumentation" ? (
+              <div>
+                <h3 className="font-semibold mb-2">Table Documentation</h3>
+                <textarea
+                  value={activeSession.tableDocumentation || ""}
+                  rows={100}
+                  cols={100}
+                  onChange={(e) => setTableDocumentation(e.target.value)}
+                />
+              </div>
             ) : focus === "systemPrompt" ? (
               <div>
-                <h3 className="font-semibold mb-2">TBD</h3>
-                Let users see and edit the system prompt
+                <h3 className="font-semibold mb-2">System Prompt (TODO: allow user edit)</h3>
+                <textarea value={systemPrompt || ""} rows={100} cols={100} />
               </div>
             ) : activeCheck ? (
-              <CheckPanel session={activeSession} check={activeCheck} step={activeStep} />
+              <CheckPanel
+                session={activeSession}
+                check={activeCheck}
+                step={activeStep}
+                startChat={startChat}
+              />
             ) : (
               <MainPanel session={activeSession} />
             )}

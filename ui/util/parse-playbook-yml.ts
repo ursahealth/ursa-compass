@@ -1,9 +1,9 @@
 import { Playbook, Step } from "./types";
 
-export default function parsePlaybookYaml(src: string): Playbook {
-  const lines = src.replace(/\r\n?/g, "\n").split("\n");
+export default function parsePlaybookYaml(filename: string, rawContent: string): Playbook {
+  const lines = rawContent.replace(/\r\n?/g, "\n").split("\n");
 
-  const playbook: Playbook = { filename: "", goal: "", rawContent: src, steps: [] };
+  const playbook: Playbook = { filename, goal: "", rawContent, steps: [] };
   let currentStep: Step | null = null;
   let currentScope;
   let isAccumulatingDescription = false;

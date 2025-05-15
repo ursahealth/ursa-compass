@@ -2,6 +2,7 @@
 export interface Session {
   uuid: string;
   name: string;
+  tableDocumentation?: string | undefined;
   tableName: string | null;
   tableData?: any;
   tableSql?: string | undefined;
