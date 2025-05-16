@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import query from "../../../engine/query";
+import query from "../../../../engine/query";
 
 type ResponseData = {};
 

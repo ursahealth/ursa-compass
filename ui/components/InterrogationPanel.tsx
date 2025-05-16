@@ -37,7 +37,7 @@ export const InterrogationPanel = () => {
 
   useEffect(() => {
     async function loadPlaybooks() {
-      const response = await fetch("/api/get-playbooks");
+      const response = await fetch("/api/compass/get-playbooks");
       const data = await response.json();
       const playbooks = data.map((file: { filename: string; content: string }) => {
         try {
@@ -55,7 +55,7 @@ export const InterrogationPanel = () => {
 
   useEffect(() => {
     async function loadPrompt() {
-      const response = await fetch("/api/get-system-prompt");
+      const response = await fetch("/api/compass/get-system-prompt");
       const data = await response.json();
       setSystemPrompt(data.prompt);
     }
@@ -65,7 +65,7 @@ export const InterrogationPanel = () => {
 
   useEffect(() => {
     async function loadSessions() {
-      const response = await fetch("/api/get-sessions");
+      const response = await fetch("/api/compass/get-sessions");
       const data = await response.json();
       setSessions(data);
     }
@@ -91,7 +91,7 @@ export const InterrogationPanel = () => {
       if (session && hasBeen10Seconds) {
         autosaveTimestamp = Date.now();
         console.log("autosaving session", session.uuid);
-        fetch("/api/autosave-session", {
+        fetch("/api/compass/autosave-session", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -116,7 +116,7 @@ export const InterrogationPanel = () => {
     });
     setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
     if (tableName) {
-      fetch(`/api/verify-table?tableName=${encodeURIComponent(tableName)}`)
+      fetch(`/api/compass/verify-table?tableName=${encodeURIComponent(tableName)}`)
         .then((response) => response.json())
         .then((data) => {
           const updatedSession = Object.assign({}, activeSession, {
@@ -153,7 +153,19 @@ export const InterrogationPanel = () => {
 
   const deleteSession = (sessionId: string) => {
     setSessions(sessions.filter((s) => s.uuid !== sessionId));
-    // TODO: delete session file from server
+        fetch("/api/compass/delete-session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ uuid: sessionId }),
+        })
+          .then((response) => {
+            // console.log("Session deleted:", response);
+          })
+          .catch((error) => {
+            console.error("Error deleting session:", error);
+          });
   };
 
   const renameSession = (sessionId: string, newName: string) => {
