@@ -90,16 +90,13 @@ export const InterrogationWorkspace = () => {
       const hasBeen10Seconds = !autosaveTimestamp || Date.now() - autosaveTimestamp > 10000;
       if (session && hasBeen10Seconds) {
         autosaveTimestamp = Date.now();
-        console.log("autosaving session", session.uuid);
         fetch("/api/compass/autosave-session", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(session),
         })
-          .then((response) => {
-            console.log("Session autosaved:", response);
+          .then(() => {
+            console.log("Session autosaved:", session.uuid);
           })
           .catch((error) => {
             console.error("Error autosaving session:", error);
@@ -179,6 +176,7 @@ export const InterrogationWorkspace = () => {
   const setPlaybookName = (playbookName: string) => {
     const updatedSession = Object.assign({}, activeSession, { playbookName });
     setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
+    autosaveSession();
   };
 
   const setTableName = (tableName: string) => {
