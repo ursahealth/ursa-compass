@@ -1,1 +1,1 @@
-export { InterrogationPanel } from "./components/InterrogationPanel";
+export { InterrogationWorkspace } from "./components/InterrogationWorkspace";

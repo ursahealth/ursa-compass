@@ -27,10 +27,9 @@ function generateDefaultSessionName(date = new Date()) {
 
 let autosaveTimestamp: number | null = null;
 
-export const InterrogationPanel = () => {
+export const InterrogationWorkspace = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [activePlaybookName, setActivePlaybookName] = useState<Playbook | null>(null);
   const [playbooks, setPlaybooks] = useState<any[]>([]);
   const [focus, setFocus] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
@@ -74,7 +73,8 @@ export const InterrogationPanel = () => {
   }, []);
 
   const activeSession = sessions.find((s) => s.uuid === activeSessionId);
-  const activePlaybook = playbooks.find((pb) => pb.filename === activePlaybookName) || null;
+  const activePlaybook =
+    playbooks.find((pb) => pb.filename === activeSession?.playbookName) || null;
   const activeStep =
     activePlaybook && focus && (focus.startsWith("step-") || focus.startsWith("check-"))
       ? activePlaybook.steps[Number(focus.split("-")[1])]
@@ -142,8 +142,7 @@ export const InterrogationPanel = () => {
       uuid,
       name: generateDefaultSessionName(now),
       createdAt: now.toISOString(),
-      prompt: "",
-      playbookYaml: "",
+      playbookName: "",
       tableName: null,
     };
     setSessions([...sessions, newSession]);
@@ -153,19 +152,19 @@ export const InterrogationPanel = () => {
 
   const deleteSession = (sessionId: string) => {
     setSessions(sessions.filter((s) => s.uuid !== sessionId));
-        fetch("/api/compass/delete-session", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ uuid: sessionId }),
-        })
-          .then((response) => {
-            // console.log("Session deleted:", response);
-          })
-          .catch((error) => {
-            console.error("Error deleting session:", error);
-          });
+    fetch("/api/compass/delete-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ uuid: sessionId }),
+    })
+      .then((response) => {
+        // console.log("Session deleted:", response);
+      })
+      .catch((error) => {
+        console.error("Error deleting session:", error);
+      });
   };
 
   const renameSession = (sessionId: string, newName: string) => {
@@ -175,6 +174,11 @@ export const InterrogationPanel = () => {
       setSessions(sessions.map((s) => (s.uuid === sessionId ? updatedSession : s)));
       autosaveSession(updatedSession);
     }
+  };
+
+  const setPlaybookName = (playbookName: string) => {
+    const updatedSession = Object.assign({}, activeSession, { playbookName });
+    setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
   };
 
   const setTableName = (tableName: string) => {
@@ -221,7 +225,7 @@ export const InterrogationPanel = () => {
               <PlaybookPanel
                 activePlaybook={activePlaybook}
                 playbooks={playbooks}
-                setActivePlaybookName={setActivePlaybookName}
+                setPlaybookName={setPlaybookName}
               />
             ) : focus === "tableName" ? (
               <TableNamePanel

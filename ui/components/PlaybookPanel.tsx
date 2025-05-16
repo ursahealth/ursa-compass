@@ -1,13 +1,13 @@
-import { Playbook, Session } from "../util/types";
+import { Playbook } from "../util/types";
 
 export const PlaybookPanel = ({
   playbooks,
   activePlaybook,
-  setActivePlaybookName,
+  setPlaybookName,
 }: {
   playbooks: Array<Playbook>;
   activePlaybook: Playbook | null;
-  setActivePlaybookName: Function;
+  setPlaybookName: Function;
 }) => {
   // return a dropdown of the playbooks, selecting one will set the activePlaybook
   return (
@@ -15,7 +15,7 @@ export const PlaybookPanel = ({
       <select
         value={activePlaybook ? activePlaybook.filename : ""}
         onChange={(e) => {
-          setActivePlaybookName(e.target.value);
+          setPlaybookName(e.target.value);
         }}
       >
         <option value="" disabled>

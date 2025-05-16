@@ -1,7 +1,7 @@
 "use client";
 
-import { InterrogationPanel } from "../../../ui/esm";
+import { InterrogationWorkspace } from "../../../ui/esm";
 
 export default function Page({}: {}) {
-  return <InterrogationPanel />;
+  return <InterrogationWorkspace />;
 }
