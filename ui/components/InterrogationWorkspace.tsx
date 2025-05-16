@@ -27,12 +27,30 @@ function generateDefaultSessionName(date = new Date()) {
 
 let autosaveTimestamp: number | null = null;
 
-export const InterrogationWorkspace = () => {
+export const InterrogationWorkspace = ({
+  isSocketInitialized,
+  socket,
+  socketInitializer,
+}: {
+  isSocketInitialized: boolean;
+  socket: { on: Function; emit: Function };
+  socketInitializer: Function;
+}) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [playbooks, setPlaybooks] = useState<any[]>([]);
   const [focus, setFocus] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
+
+  useEffect(() => {
+    socketInitializer();
+    if (isSocketInitialized) {
+      socket.on("log", (incomingLog: string) => {
+        console.log("incoming", incomingLog);
+        // TODO: handle incoming log
+      });
+    }
+  }, [isSocketInitialized]);
 
   useEffect(() => {
     async function loadPlaybooks() {
@@ -198,6 +216,7 @@ export const InterrogationWorkspace = () => {
         activeStep,
         activeCheck
       );
+      socket.emit("start-check", { text: populatedPrompt });
     }
   };
 
