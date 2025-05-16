@@ -25,6 +25,8 @@ function generateDefaultSessionName(date = new Date()) {
   return `Session ${date.toLocaleDateString()} ${timeString}`;
 }
 
+let autosaveTimestamp: number | null = null;
+
 export const InterrogationPanel = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -61,6 +63,16 @@ export const InterrogationPanel = () => {
     loadPrompt();
   }, []);
 
+  useEffect(() => {
+    async function loadSessions() {
+      const response = await fetch("/api/get-sessions");
+      const data = await response.json();
+      setSessions(data);
+    }
+
+    loadSessions();
+  }, []);
+
   const activeSession = sessions.find((s) => s.uuid === activeSessionId);
   const activePlaybook = playbooks.find((pb) => pb.filename === activePlaybookName) || null;
   const activeStep =
@@ -71,6 +83,30 @@ export const InterrogationPanel = () => {
     activeStep && focus && focus.startsWith("check-")
       ? activeStep.checks[Number(focus.split("-")[2])]
       : null;
+
+  const autosaveSession = (session = activeSession) => {
+    setTimeout(() => {
+      // throttle to perform this no more than once every 10 seconds
+      const hasBeen10Seconds = !autosaveTimestamp || Date.now() - autosaveTimestamp > 10000;
+      if (session && hasBeen10Seconds) {
+        autosaveTimestamp = Date.now();
+        console.log("autosaving session", session.uuid);
+        fetch("/api/autosave-session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(session),
+        })
+          .then((response) => {
+            console.log("Session autosaved:", response);
+          })
+          .catch((error) => {
+            console.error("Error autosaving session:", error);
+          });
+      }
+    }, 1);
+  };
 
   const blurTableName = () => {
     const tableName = activeSession?.tableName;
@@ -89,6 +125,7 @@ export const InterrogationPanel = () => {
             tableSql: data.sql,
           });
           setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
+          autosaveSession();
         })
         .catch((error) => {
           console.error("Error fetching table data:", error);
@@ -111,10 +148,12 @@ export const InterrogationPanel = () => {
     };
     setSessions([...sessions, newSession]);
     setActiveSessionId(uuid);
+    autosaveSession();
   };
 
   const deleteSession = (sessionId: string) => {
     setSessions(sessions.filter((s) => s.uuid !== sessionId));
+    // TODO: delete session file from server
   };
 
   const renameSession = (sessionId: string, newName: string) => {
@@ -122,6 +161,7 @@ export const InterrogationPanel = () => {
     if (session) {
       const updatedSession = Object.assign(session, { name: newName });
       setSessions(sessions.map((s) => (s.uuid === sessionId ? updatedSession : s)));
+      autosaveSession(updatedSession);
     }
   };
 
