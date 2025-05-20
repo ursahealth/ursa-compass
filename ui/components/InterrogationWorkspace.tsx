@@ -64,7 +64,6 @@ export const InterrogationWorkspace = ({
       // TODO: handle incoming log
     });
     socket.on("update", (type: string, keys: any, payload: Message | EvidenceItem) => {
-      console.log("incoming message", type, keys);
       setSessions((prevSessions) => {
         const updatedSessions = prevSessions.map((s) => {
           if (s.uuid === keys.sessionId) {
@@ -90,10 +89,12 @@ export const InterrogationWorkspace = ({
                     const updatedCheck = { ...check };
 
                     if (type === "message") {
-                      updatedCheck.messages = (updatedCheck.messages || []).concat(payload);
+                      const messagePayload = payload as Message;
+                      updatedCheck.messages = (updatedCheck.messages || []).concat(messagePayload);
                     }
                     if (type === "evidence") {
-                      updatedCheck.evidence = (updatedCheck.evidence || []).concat(payload);
+                      const evidencePayload = payload as EvidenceItem;
+                      updatedCheck.evidence = (updatedCheck.evidence || []).concat(evidencePayload);
                     }
 
                     return updatedCheck;
@@ -120,7 +121,7 @@ export const InterrogationWorkspace = ({
       socket.off("message");
       socket.off("evidence");
     };
-  }, [isSocketInitialized, activeSessionId]);
+  }, [isSocketInitialized]);
 
   useEffect(() => {
     async function loadPlaybooks() {
