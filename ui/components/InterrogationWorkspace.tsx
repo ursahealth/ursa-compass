@@ -1,4 +1,4 @@
-import { Playbook, Session, Step } from "../util/types";
+import { EvidenceItem, Message, Session } from "../util/types";
 import { useEffect, useState } from "react";
 import { OutlineNav } from "./OutlineNav";
 import { CheckPanel } from "./CheckPanel";
@@ -33,7 +33,7 @@ export const InterrogationWorkspace = ({
   socketInitializer,
 }: {
   isSocketInitialized: boolean;
-  socket: { on: Function; emit: Function };
+  socket: { on: Function; off: Function; emit: Function };
   socketInitializer: Function;
 }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -42,15 +42,85 @@ export const InterrogationWorkspace = ({
   const [focus, setFocus] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
 
+  const activeSession = sessions.find((s) => s.uuid === activeSessionId);
+  const activePlaybook =
+    playbooks.find((pb) => pb.filename === activeSession?.playbookName) || null;
+  const activeStep =
+    activePlaybook && focus && (focus.startsWith("step-") || focus.startsWith("check-"))
+      ? activePlaybook.steps[Number(focus.split("-")[1])]
+      : null;
+  const activeCheck =
+    activeStep && focus && focus.startsWith("check-")
+      ? activeStep.checks[Number(focus.split("-")[2])]
+      : null;
+
   useEffect(() => {
     socketInitializer();
-    if (isSocketInitialized) {
-      socket.on("log", (incomingLog: string) => {
-        console.log("incoming", incomingLog);
-        // TODO: handle incoming log
-      });
+    if (!isSocketInitialized) {
+      return;
     }
-  }, [isSocketInitialized]);
+    socket.on("log", (incomingLog: string) => {
+      console.log("incoming", incomingLog);
+      // TODO: handle incoming log
+    });
+    socket.on("update", (type: string, keys: any, payload: Message | EvidenceItem) => {
+      console.log("incoming message", type, keys);
+      setSessions((prevSessions) => {
+        const updatedSessions = prevSessions.map((s) => {
+          if (s.uuid === keys.sessionId) {
+            if (!s.steps || !s.steps.find((step) => step.key === keys.stepKey)) {
+              // create the session step for the first time if necessary
+              s = { ...s, steps: (s.steps || []).concat({ key: keys.stepKey, checks: [] }) };
+            }
+            const updatedSteps = (s.steps || []).map((step) => {
+              if (step.key === keys.stepKey) {
+                if (!step.checks || !step.checks.find((check) => check.key === keys.checkKey)) {
+                  // create the session check for the first time if necessary
+                  step = {
+                    ...step,
+                    checks: (step.checks || []).concat({
+                      key: keys.checkKey,
+                      messages: [],
+                      evidence: [],
+                    }),
+                  };
+                }
+                const updatedChecks = (step.checks || []).map((check) => {
+                  if (check.key === keys.checkKey) {
+                    const updatedCheck = { ...check };
+
+                    if (type === "message") {
+                      updatedCheck.messages = (updatedCheck.messages || []).concat(payload);
+                    }
+                    if (type === "evidence") {
+                      updatedCheck.evidence = (updatedCheck.evidence || []).concat(payload);
+                    }
+
+                    return updatedCheck;
+                  }
+                  return check;
+                });
+                const updatedStep = { ...step, checks: updatedChecks };
+                return updatedStep;
+              }
+              return step;
+            });
+            const updatedSession = { ...s, steps: updatedSteps };
+            return updatedSession;
+          }
+          autosaveSession(s);
+          return s;
+        });
+        return updatedSessions;
+      });
+    });
+
+    return () => {
+      socket.off("log");
+      socket.off("message");
+      socket.off("evidence");
+    };
+  }, [isSocketInitialized, activeSessionId]);
 
   useEffect(() => {
     async function loadPlaybooks() {
@@ -89,18 +159,6 @@ export const InterrogationWorkspace = ({
 
     loadSessions();
   }, []);
-
-  const activeSession = sessions.find((s) => s.uuid === activeSessionId);
-  const activePlaybook =
-    playbooks.find((pb) => pb.filename === activeSession?.playbookName) || null;
-  const activeStep =
-    activePlaybook && focus && (focus.startsWith("step-") || focus.startsWith("check-"))
-      ? activePlaybook.steps[Number(focus.split("-")[1])]
-      : null;
-  const activeCheck =
-    activeStep && focus && focus.startsWith("check-")
-      ? activeStep.checks[Number(focus.split("-")[2])]
-      : null;
 
   const autosaveSession = (session = activeSession) => {
     setTimeout(() => {
@@ -159,6 +217,7 @@ export const InterrogationWorkspace = ({
       createdAt: now.toISOString(),
       playbookName: "",
       tableName: null,
+      steps: [],
     };
     setSessions([...sessions, newSession]);
     setActiveSessionId(uuid);
@@ -216,7 +275,12 @@ export const InterrogationWorkspace = ({
         activeStep,
         activeCheck
       );
-      socket.emit("start-check", { text: populatedPrompt });
+      socket.emit("investigation-check", {
+        sessionId: activeSessionId,
+        stepKey: activeStep?.name,
+        checkKey: activeCheck?.name,
+        messages: [{ role: "user", content: populatedPrompt }],
+      });
     }
   };
 

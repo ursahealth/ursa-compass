@@ -9,7 +9,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>Ursa Copilot</title>
+        <title>Ursa Compass</title>
       </head>
       <body className={`${openSans.className} antialiased`}>{children}</body>
     </html>

@@ -1,16 +1,18 @@
-import { Check, Session, Step } from "../util/types";
+import { PlaybookCheck, PlaybookStep, Session } from "../util/types";
 
 export const CheckPanel = ({
   session,
   step,
   check,
-  startChat
+  startChat,
 }: {
   session: Session;
-  step: Step;
-  check: Check;
-  startChat: Function
+  step: PlaybookStep;
+  check: PlaybookCheck;
+  startChat: Function;
 }) => {
+  const sessionStep = session.steps?.find((s) => s.key === step.name);
+  const sessionCheck = sessionStep?.checks.find((c) => c.key === check.name);
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6 bg-white rounded-xl shadow-md border border-gray-200">
       <div className="space-y-2">
@@ -26,20 +28,42 @@ export const CheckPanel = ({
 
       <div className="space-y-4">
         <section>
-          <h3 className="text-xl font-semibold text-gray-800 border-b pb-1 mb-2">AI Log</h3>
-          <button
-            type="button"
-            className="px-4 py-2 bg-green-pine text-white rounded-md hover:bg-green-forest focus:outline-none focus:ring-2 focus:ring-green-pine"
-            onClick={() => startChat()}
-          >
-            Start AI Chat
-          </button>
+          <h3 className="text-xl font-semibold text-gray-800 border-b pb-1 mb-2">Messages</h3>
+
+          {sessionCheck?.messages && sessionCheck.messages.length > 0 ? (
+            sessionCheck.messages.map((message, index) => (
+              <div
+                key={index}
+                className={`p-4 rounded-md ${
+                  message.role === "user" ? "bg-blue-50 text-blue-900" : "bg-gray-50 text-gray-700"
+                } border`}
+              >
+                <p className="text-sm">{message.content}</p>
+              </div>
+            ))
+          ) : (
+            <button
+              type="button"
+              className="px-4 py-2 bg-green-pine text-white rounded-md hover:bg-green-forest focus:outline-none focus:ring-2 focus:ring-green-pine"
+              onClick={() => startChat()}
+            >
+              Start AI Chat
+            </button>
+          )}
         </section>
 
         <section>
           <h3 className="text-xl font-semibold text-gray-800 border-b pb-1 mb-2">Evidence</h3>
           <div className="bg-gray-50 p-4 rounded-md text-sm text-gray-700 border">
-            Evidence goes here
+            { sessionCheck?.evidence && sessionCheck.evidence.length > 0 ? (
+              sessionCheck.evidence.map((evidence, index) => (
+                <div key={index} className="mb-2">
+                  <p className="text-sm font-semibold">Evidence {index + 1}:</p>
+                  <p className="text-sm">{evidence.sql}</p>
+                  <pre className="bg-gray-100 p-2 rounded-md text-sm">{JSON.stringify(evidence.results, null, 2)}</pre>
+                </div>
+              ))
+            ) : null}
           </div>
         </section>
 

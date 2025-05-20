@@ -37,10 +37,10 @@ function extractCodeBlock(text) {
   return text;
 }
 
-async function queryAI(conversation, options = {}) {
+async function queryAI(messages, options = {}) {
   const params = {
     body: JSON.stringify({
-      messages: conversation,
+      messages,
       max_tokens: 1000, // TODO: increase probably
       temperature: options.temperature || options.temperature === 0 ? options.temperature : 0.5,
       anthropic_version: "bedrock-2023-05-31",
@@ -67,61 +67,45 @@ async function queryAI(conversation, options = {}) {
   return responseJSON.content[0].text;
 }
 
-const conversation = [];
-function addToConversation(role, content, options) {
-  conversation.push({ role, content });
-  options.log(conversation);
-}
-
-async function trySql(response, options) {
-  let result;
-  let sql;
-  for (let i = 0; i < 5; i++) {
-    sql = extractCodeBlock(response);
-    if (options.isCleaningChunk && !_.startsWith(sql.toLowerCase(), "select")) {
-      sql = `SELECT\n${sql}\nFROM ${options.tableName}\nLIMIT 1`;
-    }
-    try {
-      result = await query(sql, options);
-      options.sendMessage(response); // if the SQL runs, send the full message with annotations
-      if (options.sendQuery) {
-        options.sendQuery(sql, result);
-      } else {
-        options.sendMessage({ sql, result }, "query");
-      }
-      if (options.isCleaningChunk) {
-        return { annotatedSql: response, sql, result };
-      }
-      break;
-    } catch (sqlError) {
-      conversation.push({
-        role: "user",
-        content:
-          `That query failed with \n${sqlError.message}\n\nCan you try again? ` +
-          "I'm not going to display your previous message to the user, so please do not " +
-          "start your next message with an apology. Just respond as if you had responded " +
-          "the first time, but fix the SQL.",
-      });
-      response = await queryAI(conversation, options);
-      addToConversation("assistant", response, options);
-    }
+export default async function handler(payload, options) {
+  let { messages } = payload;
+  function addToMessages(role, content, options) {
+    options.sendUpdate("message", { content, role });
+    messages = messages.concat([{ role, content }]);
   }
-  return { annotatedSql: response, sql, result };
-}
 
-export default async function handler(text, options) {
-  addToConversation("user", text, options);
+  async function trySql(response, options) {
+    let result;
+    let sql;
+    for (let i = 0; i < 5; i++) {
+      sql = extractCodeBlock(response);
+      try {
+        result = await query(sql, options);
+        options.sendEvidence({ sql, result });
+        break;
+      } catch (sqlError) {
+        messages.push({
+          role: "user",
+          content:
+            `That query failed with \n${sqlError.message}\n\nCan you try again? ` +
+            "I'm not going to display your previous message to the user, so please do not " +
+            "start your next message with an apology. Just respond as if you had responded " +
+            "the first time, but fix the SQL.",
+        });
+        response = await queryAI(messages, options);
+        addToMessages("assistant", response, options);
+      }
+    }
+    return { annotatedSql: response, sql, result };
+  }
 
   for (let i = 0; i < 20; i++) {
-    let response = await queryAI(conversation, options);
-    addToConversation("assistant", response, options);
+    let response = await queryAI(messages, options);
+    addToMessages("assistant", response, options);
 
     const responseType = getResponseType(response);
-    if (options.isCleaningChunk) {
-      const { annotatedSql, sql } = await trySql(response, options);
-      return { responseType: "CLEANING_SQL", text: annotatedSql, sql };
-    } else if (responseType === "NONE") {
-      addToConversation(
+    if (responseType === "NONE") {
+      addToMessages(
         "user",
         "I'm unable to parse your response. Could you restate it? " +
           "Please make sure to start your reponse with one of the allowable keywords.",
@@ -129,7 +113,7 @@ export default async function handler(text, options) {
       );
     } else if (responseType === "QUERY_DATABASE") {
       const { result } = await trySql(response, options);
-      addToConversation("user", `Result is: \n\`\`\`\n${JSON.stringify(result)}\n\`\`\``, options);
+      addToMessages("user", `Result is: \n\`\`\`\n${JSON.stringify(result)}\n\`\`\``, options);
     } else {
       return { responseType, text: response };
     }

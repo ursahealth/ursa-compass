@@ -1,11 +1,11 @@
-import { Check, Playbook, Session, Step } from "./types";
+import { PlaybookCheck, Playbook, Session, PlaybookStep } from "./types";
 
 export default function populateSystemPrompt(
   systemPrompt: string,
   session: Session,
   playbook: Playbook,
-  step: Step,
-  check: Check
+  step: PlaybookStep,
+  check: PlaybookCheck
 ): string {
   let text = systemPrompt;
 
