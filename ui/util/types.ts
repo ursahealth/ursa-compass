@@ -5,7 +5,7 @@ export interface Message {
 
 export interface EvidenceItem {
   sql: string;
-  results: any;
+  result: any;
 }
 
 export interface SessionCheck {

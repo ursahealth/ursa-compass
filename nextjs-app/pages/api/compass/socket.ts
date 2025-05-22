@@ -45,8 +45,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         try {
           await handleCheck(content, {
             databaseType: "postgres", // TODO: make user-editable
-            sendUpdate: (type: string, payload: { content: string; role: string }) => {
-              socket.emit("update", type, keys, payload);
+            sendMessages: (payload: Array<{ content: string; role: string }>) => {
+              socket.emit("update", "messages", keys, payload);
             },
             sendEvidence: (evidence: { sql: string; results: any }) => {
               socket.emit("update", "evidence", keys, evidence);

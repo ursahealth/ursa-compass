@@ -70,8 +70,8 @@ async function queryAI(messages, options = {}) {
 export default async function handler(payload, options) {
   let { messages } = payload;
   function addToMessages(role, content, options) {
-    options.sendUpdate("message", { content, role });
     messages = messages.concat([{ role, content }]);
+    options.sendMessages(messages);
   }
 
   async function trySql(response, options) {

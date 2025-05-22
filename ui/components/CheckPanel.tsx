@@ -1,4 +1,5 @@
 import { PlaybookCheck, PlaybookStep, Session } from "../util/types";
+import { DataTable } from "./DataTable";
 
 export const CheckPanel = ({
   session,
@@ -55,15 +56,13 @@ export const CheckPanel = ({
         <section>
           <h3 className="text-xl font-semibold text-gray-800 border-b pb-1 mb-2">Evidence</h3>
           <div className="bg-gray-50 p-4 rounded-md text-sm text-gray-700 border">
-            { sessionCheck?.evidence && sessionCheck.evidence.length > 0 ? (
-              sessionCheck.evidence.map((evidence, index) => (
-                <div key={index} className="mb-2">
-                  <p className="text-sm font-semibold">Evidence {index + 1}:</p>
-                  <p className="text-sm">{evidence.sql}</p>
-                  <pre className="bg-gray-100 p-2 rounded-md text-sm">{JSON.stringify(evidence.results, null, 2)}</pre>
-                </div>
-              ))
-            ) : null}
+            {sessionCheck?.evidence && sessionCheck.evidence.length > 0
+              ? sessionCheck.evidence.map((evidence, index) => (
+                  <div key={index} className="mb-2">
+                    <DataTable data={evidence.result} sql={evidence.sql} />
+                  </div>
+                ))
+              : null}
           </div>
         </section>
 

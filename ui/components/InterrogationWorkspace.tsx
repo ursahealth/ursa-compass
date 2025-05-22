@@ -63,7 +63,7 @@ export const InterrogationWorkspace = ({
       console.log("incoming", incomingLog);
       // TODO: handle incoming log
     });
-    socket.on("update", (type: string, keys: any, payload: Message | EvidenceItem) => {
+    socket.on("update", (type: string, keys: any, payload: Array<Message> | EvidenceItem) => {
       setSessions((prevSessions) => {
         const updatedSessions = prevSessions.map((s) => {
           if (s.uuid === keys.sessionId) {
@@ -88,9 +88,9 @@ export const InterrogationWorkspace = ({
                   if (check.key === keys.checkKey) {
                     const updatedCheck = { ...check };
 
-                    if (type === "message") {
-                      const messagePayload = payload as Message;
-                      updatedCheck.messages = (updatedCheck.messages || []).concat(messagePayload);
+                    if (type === "messages") {
+                      const messagePayload = payload as Array<Message>;
+                      updatedCheck.messages = messagePayload;
                     }
                     if (type === "evidence") {
                       const evidencePayload = payload as EvidenceItem;
