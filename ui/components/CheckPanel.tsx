@@ -17,14 +17,18 @@ export const CheckPanel = ({
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6 bg-white rounded-xl shadow-md border border-gray-200">
       <div className="space-y-2">
-        <h2 className="text-m font-semibold text-gray-700">{step.name}</h2>
-        <div className="ml-6 p-2 border-l-4 border-blue-500 bg-blue-50 text-blue-900">
-          <p className="text-sm">{step.description}</p>
-        </div>
-        <h1 className="text-2xl font-light text-gray-800">{check.name}</h1>
-        <div className="ml-6 p-2 border-l-4 border-blue-500 bg-blue-50 text-blue-900">
-          <p className="text-sm">{check.description}</p>
-        </div>
+        <h2 className="text-m font-semibold text-gray-700">{step.label}</h2>
+        {step.description && (
+          <div className="ml-6 p-2 border-l-4 border-blue-500 bg-blue-50 text-blue-900">
+            <p className="text-sm">{step.description}</p>
+          </div>
+        )}
+        <h1 className="text-2xl font-light text-gray-800">{check.label}</h1>
+        {check.description && (
+          <div className="ml-6 p-2 border-l-4 border-blue-500 bg-blue-50 text-blue-900">
+            <p className="text-sm">{check.description}</p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
