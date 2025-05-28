@@ -304,6 +304,27 @@ export const InterrogationWorkspace = ({
     }
   };
 
+  const updatePlaybook = (name: string, content: string) => {
+    const updatedPlaybook = parsePlaybookYaml(name, content);
+    const hasExistingPlaybook = playbooks.some((pb) => pb.filename === name);
+    if (hasExistingPlaybook) {
+      setPlaybooks((prev) => prev.map((pb) => (pb.filename === name ? updatedPlaybook : pb)));
+    } else {
+      setPlaybooks((prev) => [...prev, updatedPlaybook]);
+    }
+    fetch("/api/compass/save-playbook", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: name, rawContent: content }),
+    })
+      .then(() => {
+        setFocus("");
+      })
+      .catch((error) => {
+        console.error("Error updating playbook:", error);
+      });
+  };
+
   return (
     <div className="flex h-full w-full flex-row justify-between">
       <div className="flex h-full w-full flex-1 flex-col justify-between">
@@ -327,6 +348,7 @@ export const InterrogationWorkspace = ({
                 activePlaybook={activePlaybook}
                 playbooks={playbooks}
                 setPlaybookName={setPlaybookName}
+                updatePlaybook={updatePlaybook}
               />
             ) : focus === "tableName" ? (
               <TableNamePanel
@@ -347,7 +369,7 @@ export const InterrogationWorkspace = ({
             ) : focus === "systemPrompt" ? (
               <div>
                 <div className="flex flex-rows items-center justify-between mb-4">
-                <h3 className="font-semibold mb-2">System Prompt</h3>
+                  <h3 className="font-semibold mb-2">System Prompt</h3>
                   <button
                     className="px-4 py-2 bg-green-pine text-white rounded-md hover:bg-green-forest focus:outline-none focus:ring-2 focus:ring-green-pine disabled:bg-gray-300"
                     disabled={!systemPrompt}

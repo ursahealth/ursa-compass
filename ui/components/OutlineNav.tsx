@@ -56,9 +56,9 @@ export const OutlineNav = ({
               }}
               className="cursor-pointer font-bold"
             >
-              Step {index + 1}: {step.name}
+              Step {index + 1}: {step.label}
             </li>
-            <ul key={`checks-${index}`} className="pl-4 pb-2">
+            <ul key={`checks-${index}`} className="pl-4 pb-2 list-disc">
               {step.checks.map((check, checkIndex) => (
                 <li className="ml-4 border-b border-gray-400" key={checkIndex}>
                   <span
@@ -67,7 +67,7 @@ export const OutlineNav = ({
                     }}
                     className="cursor-pointer"
                   >
-                    {check.name}
+                    {check.label}
                   </span>
                 </li>
               ))}

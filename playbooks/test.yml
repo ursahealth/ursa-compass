@@ -41,7 +41,7 @@ playbook:
             select distinct claim_type_code
             from my_claims_table
             limit 20
-        - check: type-of-bill-code 
+        - check: type-of-bill-code
           label: Check presence and population of type_of_bill codes (indicative of Institutional).
         - check: facility-type-code
           label: Check presence and population of facility_type_code or place_of_service codes (indicative of Professional).
