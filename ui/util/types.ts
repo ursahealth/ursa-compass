@@ -12,6 +12,7 @@ export interface SessionCheck {
   key: string;
   messages: Array<Message>;
   evidence: Array<EvidenceItem>;
+  assertion?: string | null;
 }
 
 export interface SessionStep {

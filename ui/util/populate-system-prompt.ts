@@ -14,9 +14,9 @@ export default function populateSystemPrompt(
   text = text.replace(`{{tableSql}}`, session.tableSql || "");
   text = text.replace(`{{tableData}}`, JSON.stringify(session.tableData));
   text = text.replace(`{{playbookGoal}}`, playbook.goal || "");
-  text = text.replace(`{{stepName}}`, step.name || "");
+  text = text.replace(`{{stepName}}`, step.label || "");
   text = text.replace(`{{stepDescription}}`, step.description || "");
-  text = text.replace(`{{checkName}}`, check.name || "");
+  text = text.replace(`{{checkName}}`, check.label || "");
   text = text.replace(`{{checkDescription}}`, check.description || "");
   return text;
 }

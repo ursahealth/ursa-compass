@@ -55,6 +55,68 @@ export const InspectionWorkspace = ({
       ? activeStep.checks[Number(focus.split("-")[2])]
       : null;
 
+  function updateCheckAttribute(
+    sessionId: string | null,
+    stepKey: string,
+    checkKey: string,
+    attribute: string,
+    payload: any
+  ) {
+    setSessions((prevSessions) => {
+      const updatedSessions = prevSessions.map((s) => {
+        if (s.uuid === sessionId) {
+          if (!s.steps || !s.steps.find((step) => step.key === stepKey)) {
+            // create the session step for the first time if necessary
+            s = { ...s, steps: (s.steps || []).concat({ key: stepKey, checks: [] }) };
+          }
+          const updatedSteps = (s.steps || []).map((step) => {
+            if (step.key === stepKey) {
+              if (!step.checks || !step.checks.find((check) => check.key === checkKey)) {
+                // create the session check for the first time if necessary
+                step = {
+                  ...step,
+                  checks: (step.checks || []).concat({
+                    key: checkKey,
+                    messages: [],
+                    evidence: [],
+                  }),
+                };
+              }
+              const updatedChecks = (step.checks || []).map((check) => {
+                if (check.key === checkKey) {
+                  const updatedCheck = { ...check };
+
+                  if (attribute === "messages") {
+                    const messagePayload = payload as Array<Message>;
+                    updatedCheck.messages = messagePayload;
+                  } else if (attribute === "evidence") {
+                    const evidencePayload = payload as EvidenceItem;
+                    updatedCheck.evidence = (updatedCheck.evidence || []).concat(evidencePayload);
+                  } else if (attribute === "assertion") {
+                    updatedCheck.assertion = payload as string;
+                  } else {
+                    //updatedCheck[attribute] = payload;
+                  }
+
+                  return updatedCheck;
+                }
+                return check;
+              });
+              const updatedStep = { ...step, checks: updatedChecks };
+              return updatedStep;
+            }
+            return step;
+          });
+          const updatedSession = { ...s, steps: updatedSteps };
+          autosaveSession(updatedSession);
+          return updatedSession;
+        }
+        return s;
+      });
+      return updatedSessions;
+    });
+  }
+
   useEffect(() => {
     socketInitializer();
     if (!isSocketInitialized) {
@@ -65,56 +127,7 @@ export const InspectionWorkspace = ({
       // TODO: handle incoming log
     });
     socket.on("update", (type: string, keys: any, payload: Array<Message> | EvidenceItem) => {
-      setSessions((prevSessions) => {
-        const updatedSessions = prevSessions.map((s) => {
-          if (s.uuid === keys.sessionId) {
-            if (!s.steps || !s.steps.find((step) => step.key === keys.stepKey)) {
-              // create the session step for the first time if necessary
-              s = { ...s, steps: (s.steps || []).concat({ key: keys.stepKey, checks: [] }) };
-            }
-            const updatedSteps = (s.steps || []).map((step) => {
-              if (step.key === keys.stepKey) {
-                if (!step.checks || !step.checks.find((check) => check.key === keys.checkKey)) {
-                  // create the session check for the first time if necessary
-                  step = {
-                    ...step,
-                    checks: (step.checks || []).concat({
-                      key: keys.checkKey,
-                      messages: [],
-                      evidence: [],
-                    }),
-                  };
-                }
-                const updatedChecks = (step.checks || []).map((check) => {
-                  if (check.key === keys.checkKey) {
-                    const updatedCheck = { ...check };
-
-                    if (type === "messages") {
-                      const messagePayload = payload as Array<Message>;
-                      updatedCheck.messages = messagePayload;
-                    }
-                    if (type === "evidence") {
-                      const evidencePayload = payload as EvidenceItem;
-                      updatedCheck.evidence = (updatedCheck.evidence || []).concat(evidencePayload);
-                    }
-
-                    return updatedCheck;
-                  }
-                  return check;
-                });
-                const updatedStep = { ...step, checks: updatedChecks };
-                return updatedStep;
-              }
-              return step;
-            });
-            const updatedSession = { ...s, steps: updatedSteps };
-            return updatedSession;
-          }
-          autosaveSession(s);
-          return s;
-        });
-        return updatedSessions;
-      });
+      updateCheckAttribute(keys.sessionId, keys.stepKey, keys.checkKey, type, payload);
     });
 
     return () => {
@@ -162,6 +175,10 @@ export const InspectionWorkspace = ({
     loadSessions();
   }, []);
 
+  const acceptAssertion = (stepKey: string, checkKey: string, assertion: string) => {
+    updateCheckAttribute(activeSessionId, stepKey, checkKey, "assertion", assertion);
+  };
+
   const autosaveSession = (session = activeSession) => {
     setTimeout(() => {
       // throttle to perform this no more than once every 10 seconds
@@ -174,7 +191,7 @@ export const InspectionWorkspace = ({
           body: JSON.stringify(session),
         })
           .then(() => {
-            console.log("Session autosaved:", session.uuid);
+            console.log("Session autosaved:", session.uuid, session.name);
           })
           .catch((error) => {
             console.error("Error autosaving session:", error);
@@ -200,7 +217,7 @@ export const InspectionWorkspace = ({
             tableSql: data.sql,
           });
           setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
-          autosaveSession();
+          autosaveSession(updatedSession);
         })
         .catch((error) => {
           console.error("Error fetching table data:", error);
@@ -223,7 +240,7 @@ export const InspectionWorkspace = ({
     };
     setSessions([...sessions, newSession]);
     setActiveSessionId(uuid);
-    autosaveSession();
+    autosaveSession(newSession);
   };
 
   const deleteSession = (sessionId: string) => {
@@ -252,6 +269,20 @@ export const InspectionWorkspace = ({
     }
   };
 
+  const rejectAssertion = (
+    stepKey: string,
+    checkKey: string,
+    messages: Array<Message>,
+    rationale: string
+  ) => {
+    socket.emit("investigation-check", {
+      sessionId: activeSessionId,
+      stepKey,
+      checkKey,
+      messages: messages.concat([{ role: "user", content: rationale }]),
+    });
+  };
+
   const saveSystemPrompt = () => {
     fetch("/api/compass/save-system-prompt", {
       method: "POST",
@@ -272,7 +303,7 @@ export const InspectionWorkspace = ({
   const setPlaybookName = (playbookName: string) => {
     const updatedSession = Object.assign({}, activeSession, { playbookName });
     setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
-    autosaveSession();
+    autosaveSession(updatedSession);
   };
 
   const setTableName = (tableName: string) => {
@@ -295,12 +326,20 @@ export const InspectionWorkspace = ({
         activeStep,
         activeCheck
       );
+      const messages = [{ role: "user", content: populatedPrompt }];
       socket.emit("investigation-check", {
         sessionId: activeSessionId,
         stepKey: activeStep?.name,
         checkKey: activeCheck?.name,
-        messages: [{ role: "user", content: populatedPrompt }],
+        messages,
       });
+      updateCheckAttribute(
+        activeSessionId,
+        activeStep?.name,
+        activeCheck?.name,
+        "messages",
+        messages
+      );
     }
   };
 
@@ -387,10 +426,12 @@ export const InspectionWorkspace = ({
               </div>
             ) : activeCheck ? (
               <CheckPanel
-                session={activeSession}
+                acceptAssertion={acceptAssertion}
                 check={activeCheck}
-                step={activeStep}
+                rejectAssertion={rejectAssertion}
+                session={activeSession}
                 startChat={startChat}
+                step={activeStep}
               />
             ) : (
               <MainPanel session={activeSession} />
