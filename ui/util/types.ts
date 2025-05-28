@@ -34,13 +34,16 @@ export interface Session {
 }
 export interface PlaybookCheck {
   name: string;
+  label?: string;
   description?: string;
+  dependencies?: string[];
 }
 export interface PlaybookStep {
   name: string;
+  label?: string;
   description?: string;
-  goal: string;
   checks: PlaybookCheck[];
+  dependencies?: string[];
 }
 export interface Playbook {
   filename: string;

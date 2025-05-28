@@ -8,6 +8,8 @@ export default function parsePlaybookYaml(filename: string, rawContent: string):
   let currentScope;
   let isAccumulatingDescription = false;
   let description = "";
+  let isAccumulatingDependencies = false;
+  let dependencies: string[] = [];
 
   for (let raw of lines) {
     const line = raw.replace(/\t/g, "  "); // tabs → spaces
@@ -19,7 +21,12 @@ export default function parsePlaybookYaml(filename: string, rawContent: string):
       continue;
     }
 
-    if (isAccumulatingDescription && (line.trim().startsWith("-step") || line.trim().startsWith("- check:"))) {
+    if (
+      isAccumulatingDescription &&
+      (line.trim().startsWith("-step") ||
+        line.trim().startsWith("- check:") ||
+        line.trim().startsWith("dependencies:"))
+    ) {
       isAccumulatingDescription = false;
       if (currentScope === "step" && currentStep) {
         currentStep.description = description.trim();
@@ -32,9 +39,27 @@ export default function parsePlaybookYaml(filename: string, rawContent: string):
       continue;
     }
 
+    if (
+      isAccumulatingDependencies &&
+      (line.trim().startsWith("-step") || line.trim().startsWith("- check:"))
+    ) {
+      isAccumulatingDependencies = false;
+      if (currentScope === "step" && currentStep) {
+        currentStep.dependencies = dependencies.map((dep) => dep.trim());
+      } else if (currentScope === "check" && currentStep && currentStep.checks.length > 0) {
+        const lastCheck = currentStep.checks[currentStep.checks.length - 1];
+        lastCheck.dependencies = dependencies.map((dep) => dep.trim());
+      }
+    }
+
+    if (isAccumulatingDependencies && line.trim().startsWith("- ")) {
+      dependencies.push(line.trim().substring(2)); // Remove leading "- "
+      continue;
+    }
+
     if (line.trim().startsWith("- step:")) {
       const name = line.split(/- step:\s*/)[1];
-      currentStep = { name, goal: "", checks: [] };
+      currentStep = { name, checks: [] };
       currentScope = "step";
       playbook.steps.push(currentStep);
       continue;
@@ -46,15 +71,35 @@ export default function parsePlaybookYaml(filename: string, rawContent: string):
       currentScope = "check";
       continue;
     }
-    
+
     if (line.trim().startsWith("description: |") && currentStep) {
       isAccumulatingDescription = true;
       description = "";
       continue;
     }
 
+    if (line.trim().startsWith("dependencies:") && currentStep) {
+      isAccumulatingDependencies = true;
+      dependencies = [];
+      continue;
+    }
+
+    if (line.trim().startsWith("label:") && currentScope === "step" && currentStep) {
+      currentStep.label = line.split(/label:\s*/)[1].trim();
+      continue;
+    }
+
+    if (
+      line.trim().startsWith("label:") &&
+      currentScope === "check" &&
+      currentStep &&
+      currentStep.checks.length > 0
+    ) {
+      const lastCheck = currentStep.checks[currentStep.checks.length - 1];
+      lastCheck.label = line.split(/label:\s*/)[1].trim();
+      continue;
+    }
   }
 
   return playbook;
 }
-
