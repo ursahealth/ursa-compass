@@ -41,6 +41,7 @@ export const InterrogationWorkspace = ({
   const [playbooks, setPlaybooks] = useState<any[]>([]);
   const [focus, setFocus] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
+  const [baseSystemPrompt, setBaseSystemPrompt] = useState<string | null>(null);
 
   const activeSession = sessions.find((s) => s.uuid === activeSessionId);
   const activePlaybook =
@@ -145,7 +146,7 @@ export const InterrogationWorkspace = ({
     async function loadPrompt() {
       const response = await fetch("/api/compass/get-system-prompt");
       const data = await response.json();
-      setSystemPrompt(data.prompt);
+      setBaseSystemPrompt(data.prompt);
     }
 
     loadPrompt();
@@ -251,6 +252,23 @@ export const InterrogationWorkspace = ({
     }
   };
 
+  const saveSystemPrompt = () => {
+    fetch("/api/compass/save-system-prompt", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ systemPrompt }),
+    })
+      .then((response) => {
+        setBaseSystemPrompt(systemPrompt);
+        setSystemPrompt(null);
+      })
+      .catch((error) => {
+        console.error("Error saving system prompt:", error);
+      });
+  };
+
   const setPlaybookName = (playbookName: string) => {
     const updatedSession = Object.assign({}, activeSession, { playbookName });
     setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
@@ -268,9 +286,10 @@ export const InterrogationWorkspace = ({
   };
 
   const startChat = () => {
-    if (systemPrompt && activeSession) {
+    const effectiveSystemPrompt = systemPrompt || baseSystemPrompt;
+    if (effectiveSystemPrompt && activeSession) {
       const populatedPrompt = populateSystemPrompt(
-        systemPrompt,
+        effectiveSystemPrompt,
         activeSession,
         activePlaybook,
         activeStep,
@@ -327,8 +346,22 @@ export const InterrogationWorkspace = ({
               </div>
             ) : focus === "systemPrompt" ? (
               <div>
-                <h3 className="font-semibold mb-2">System Prompt (TODO: allow user edit)</h3>
-                <textarea value={systemPrompt || ""} rows={100} cols={100} />
+                <div className="flex flex-rows items-center justify-between mb-4">
+                <h3 className="font-semibold mb-2">System Prompt</h3>
+                  <button
+                    className="px-4 py-2 bg-green-pine text-white rounded-md hover:bg-green-forest focus:outline-none focus:ring-2 focus:ring-green-pine disabled:bg-gray-300"
+                    disabled={!systemPrompt}
+                    onClick={() => saveSystemPrompt()}
+                  >
+                    Update Prompt
+                  </button>
+                </div>
+                <textarea
+                  onChange={(event) => setSystemPrompt(event.target.value)}
+                  value={systemPrompt || baseSystemPrompt || ""}
+                  rows={100}
+                  cols={100}
+                />
               </div>
             ) : activeCheck ? (
               <CheckPanel
