@@ -1,1 +1,1 @@
-export { InterrogationWorkspace } from "./components/InterrogationWorkspace";
+export { InspectionWorkspace } from "./components/InspectionWorkspace";

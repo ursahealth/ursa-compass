@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { InterrogationWorkspace } from "../../../ui/esm";
+import { InspectionWorkspace } from "../../../ui/esm";
 
 let socket: Socket;
 
@@ -16,7 +16,7 @@ export default function Page({}: {}) {
   };
 
   return (
-    <InterrogationWorkspace
+    <InspectionWorkspace
       isSocketInitialized={isSocketInitialized}
       socket={socket}
       socketInitializer={socketInitializer}

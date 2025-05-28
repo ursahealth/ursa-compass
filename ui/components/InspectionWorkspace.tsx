@@ -27,7 +27,7 @@ function generateDefaultSessionName(date = new Date()) {
 
 let autosaveTimestamp: number | null = null;
 
-export const InterrogationWorkspace = ({
+export const InspectionWorkspace = ({
   isSocketInitialized,
   socket,
   socketInitializer,
