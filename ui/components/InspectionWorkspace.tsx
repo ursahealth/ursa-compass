@@ -439,6 +439,7 @@ export const InspectionWorkspace = ({
                 acceptAssertion={acceptAssertion}
                 appendMessage={appendMessage}
                 check={activeCheck}
+                playbook={activePlaybook}
                 session={activeSession}
                 startCheck={startCheck}
                 step={activeStep}

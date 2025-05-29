@@ -1,13 +1,15 @@
 import { Message } from "../util/types";
 import { useEffect, useRef, useState } from "react";
-import { PlaybookCheck, PlaybookStep, Session } from "../util/types";
+import { Playbook, PlaybookCheck, PlaybookStep, Session } from "../util/types";
 import { DataTable } from "./DataTable";
 import MessageContent from "./MessageContent";
+import getCheckStatus from "../util/get-check-status";
 
 export const CheckPanel = ({
   acceptAssertion,
   appendMessage,
   check,
+  playbook,
   session,
   startCheck,
   step,
@@ -15,6 +17,7 @@ export const CheckPanel = ({
   acceptAssertion: Function;
   appendMessage: Function;
   check: PlaybookCheck;
+  playbook: Playbook;
   session: Session;
   startCheck: Function;
   step: PlaybookStep;
@@ -49,6 +52,7 @@ export const CheckPanel = ({
     setRejectionRationale("");
   };
 
+  const checkStatus = getCheckStatus(session, playbook, step.name, check.name);
   const lastMessage =
     sessionCheck?.messages &&
     sessionCheck.messages.length > 0 &&
@@ -90,11 +94,11 @@ export const CheckPanel = ({
             <h3 className="text-xl font-semibold text-gray-800">Messages</h3>
             <button
               type="button"
-              className="px-4 py-2 bg-green-pine text-white rounded-md hover:bg-green-forest focus:outline-none focus:ring-2 focus:ring-green-pine"
+              className="px-4 py-2 bg-green-pine text-white rounded-md hover:bg-green-forest focus:outline-none focus:ring-2 focus:ring-green-pine disabled:bg-gray-300"
+              disabled={checkStatus === "LOCKED"}
               onClick={() => startCheck()}
             >
-              {sessionCheck?.messages && sessionCheck.messages.length > 0 ? "Reset " : "Start "}
-              Check
+              {checkStatus === "LOCKED" ? "Check Not Ready" : sessionCheck?.messages && sessionCheck.messages.length > 0 ? "Reset Check" : "Start Check"}
             </button>
           </div>
 

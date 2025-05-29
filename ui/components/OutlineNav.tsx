@@ -7,6 +7,7 @@ const checkStatusMap: Record<string, string> = {
   UNDERWAY: "⏳ ",
   USER_ACTION: "❓ ",
   ERROR: "❌ ",
+  LOCKED: "🔒 ",
   NOT_STARTED: "",
 };
 
@@ -73,7 +74,7 @@ export const OutlineNav = ({
             </li>
             <ul key={`checks-${index}`} className="pl-4 pb-2 list-disc">
               {step.checks.map((check, checkIndex) => {
-                const checkStatus = getCheckStatus(session, step.name, check.name);
+                const checkStatus = getCheckStatus(session, activePlaybook, step.name, check.name);
                 const isFocus = `check-${index}-${checkIndex}` === focus;
                 return (
                   <li
