@@ -1,13 +1,26 @@
 import React from "react";
-import { Playbook } from "../util/types";
+import { Playbook, Session } from "../util/types";
+import getCheckStatus from "../util/get-check-status";
+
+const checkStatusMap: Record<string, string> = {
+  FINISHED: "✅ ",
+  UNDERWAY: "⏳ ",
+  USER_ACTION: "❓ ",
+  ERROR: "❌ ",
+  NOT_STARTED: "",
+};
 
 export const OutlineNav = ({
   activePlaybook,
+  focus,
+  session,
   setFocus,
   tableName,
   tableStatus,
 }: {
   activePlaybook: Playbook;
+  focus: string | null;
+  session: Session;
   setFocus: Function;
   tableName: string | null;
   tableStatus: string | undefined;
@@ -59,18 +72,26 @@ export const OutlineNav = ({
               Step {index + 1}: {step.label}
             </li>
             <ul key={`checks-${index}`} className="pl-4 pb-2 list-disc">
-              {step.checks.map((check, checkIndex) => (
-                <li className="ml-4 border-b border-gray-400" key={checkIndex}>
-                  <span
-                    onClick={() => {
-                      setFocus(`check-${index}-${checkIndex}`);
-                    }}
-                    className="cursor-pointer"
+              {step.checks.map((check, checkIndex) => {
+                const checkStatus = getCheckStatus(session, step.name, check.name);
+                const isFocus = `check-${index}-${checkIndex}` === focus;
+                return (
+                  <li
+                    className={`ml-2 pl-2 border-b border-gray-400 ${isFocus ? "bg-gray-200" : ""}`}
+                    key={checkIndex}
                   >
-                    {check.label}
-                  </span>
-                </li>
-              ))}
+                    <span
+                      onClick={() => {
+                        setFocus(`check-${index}-${checkIndex}`);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      {checkStatusMap[checkStatus]}
+                      {check.label}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </React.Fragment>
         ))}

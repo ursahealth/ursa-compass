@@ -9,14 +9,14 @@ export const CheckPanel = ({
   check,
   rejectAssertion,
   session,
-  startChat,
+  startCheck,
   step,
 }: {
   acceptAssertion: Function;
   check: PlaybookCheck;
   rejectAssertion: Function;
   session: Session;
-  startChat: Function;
+  startCheck: Function;
   step: PlaybookStep;
 }) => {
   const [rejectionRationale, setRejectionRationale] = useState<string>("");
@@ -70,9 +70,19 @@ export const CheckPanel = ({
 
       <div className="space-y-4">
         <section>
-          <h3 className="text-xl font-semibold text-gray-800 border-b pb-1 mb-2">Messages</h3>
+          <div className="flex justify-between align-center border-b pb-1 mb-2">
+            <h3 className="text-xl font-semibold text-gray-800">Messages</h3>
+            <button
+              type="button"
+              className="px-4 py-2 bg-green-pine text-white rounded-md hover:bg-green-forest focus:outline-none focus:ring-2 focus:ring-green-pine"
+              onClick={() => startCheck()}
+            >
+              {sessionCheck?.messages && sessionCheck.messages.length > 0 ? "Reset " : "Start "}
+              Check
+            </button>
+          </div>
 
-          {sessionCheck?.messages && sessionCheck.messages.length > 0 ? (
+          {sessionCheck?.messages && sessionCheck.messages.length > 0 && (
             <div className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 max-h-96 overflow-y-auto mb-4">
               {sessionCheck.messages.map((message, i) => (
                 <div className="space-x-2" key={i}>
@@ -101,14 +111,6 @@ export const CheckPanel = ({
                 </div>
               ))}
             </div>
-          ) : (
-            <button
-              type="button"
-              className="px-4 py-2 bg-green-pine text-white rounded-md hover:bg-green-forest focus:outline-none focus:ring-2 focus:ring-green-pine"
-              onClick={() => startChat()}
-            >
-              Start AI Chat
-            </button>
           )}
         </section>
 

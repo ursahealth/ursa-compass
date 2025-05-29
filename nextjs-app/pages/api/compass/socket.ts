@@ -35,13 +35,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // TODO
       });
 
-      socket.on("investigation-check", async (content) => {
+      socket.on("inspection-check", async (content) => {
         const keys = {
           sessionId: content.sessionId,
           stepKey: content.stepKey,
           checkKey: content.checkKey,
         };
 
+        console.log("received inspection check request", keys);
         try {
           await handleCheck(content, {
             databaseType: "postgres", // TODO: make user-editable
@@ -56,9 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           console.error(err);
           socket.emit("message", { text: "Sorry, I ran into an error" });
         }
-
-        socket.emit("message", { text: "Work on this file is complete" });
-        socket.emit("finished");
+        console.log("finished inspection check request", keys);
       });
     });
   }

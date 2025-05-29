@@ -59,8 +59,8 @@ export const InspectionWorkspace = ({
     sessionId: string | null,
     stepKey: string,
     checkKey: string,
-    attribute: string,
-    payload: any
+    attribute: string | {},
+    payload?: any
   ) {
     setSessions((prevSessions) => {
       const updatedSessions = prevSessions.map((s) => {
@@ -86,7 +86,10 @@ export const InspectionWorkspace = ({
                 if (check.key === checkKey) {
                   const updatedCheck = { ...check };
 
-                  if (attribute === "messages") {
+                  if (typeof attribute === "object") {
+                    // If attribute is an object, merge it into the check
+                    Object.assign(updatedCheck, attribute);
+                  } else if (attribute === "messages") {
                     const messagePayload = payload as Array<Message>;
                     updatedCheck.messages = messagePayload;
                   } else if (attribute === "evidence") {
@@ -275,12 +278,20 @@ export const InspectionWorkspace = ({
     messages: Array<Message>,
     rationale: string
   ) => {
-    socket.emit("investigation-check", {
+    messages = messages.concat([{ role: "user", content: rationale }]);
+    socket.emit("inspection-check", {
       sessionId: activeSessionId,
       stepKey,
       checkKey,
-      messages: messages.concat([{ role: "user", content: rationale }]),
+      messages,
     });
+    updateCheckAttribute(
+      activeSessionId,
+      stepKey,
+      checkKey,
+      "messages",
+      messages
+    );
   };
 
   const saveSystemPrompt = () => {
@@ -316,7 +327,7 @@ export const InspectionWorkspace = ({
     setSessions(sessions.map((s) => (s.uuid === activeSessionId ? updatedSession : s)));
   };
 
-  const startChat = () => {
+  const startCheck = () => {
     const effectiveSystemPrompt = systemPrompt || baseSystemPrompt;
     if (effectiveSystemPrompt && activeSession) {
       const populatedPrompt = populateSystemPrompt(
@@ -327,7 +338,7 @@ export const InspectionWorkspace = ({
         activeCheck
       );
       const messages = [{ role: "user", content: populatedPrompt }];
-      socket.emit("investigation-check", {
+      socket.emit("inspection-check", {
         sessionId: activeSessionId,
         stepKey: activeStep?.name,
         checkKey: activeCheck?.name,
@@ -337,8 +348,7 @@ export const InspectionWorkspace = ({
         activeSessionId,
         activeStep?.name,
         activeCheck?.name,
-        "messages",
-        messages
+        { messages, evidence: [], assertion: null },
       );
     }
   };
@@ -430,7 +440,7 @@ export const InspectionWorkspace = ({
                 check={activeCheck}
                 rejectAssertion={rejectAssertion}
                 session={activeSession}
-                startChat={startChat}
+                startCheck={startCheck}
                 step={activeStep}
               />
             ) : (
@@ -442,8 +452,10 @@ export const InspectionWorkspace = ({
           <div className="w-[600px] flex-none overflow-y-auto overflow-x-hidden bg-gray-50 p-4 border-l text-[14px]">
             {activeSession && (
               <OutlineNav
-                setFocus={setFocus}
                 activePlaybook={activePlaybook}
+                focus={focus}
+                setFocus={setFocus}
+                session={activeSession}
                 tableName={activeSession.tableName}
                 tableStatus={activeSession.tableStatus}
               />
