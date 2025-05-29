@@ -6,15 +6,15 @@ import MessageContent from "./MessageContent";
 
 export const CheckPanel = ({
   acceptAssertion,
+  appendMessage,
   check,
-  rejectAssertion,
   session,
   startCheck,
   step,
 }: {
   acceptAssertion: Function;
+  appendMessage: Function;
   check: PlaybookCheck;
-  rejectAssertion: Function;
   session: Session;
   startCheck: Function;
   step: PlaybookStep;
@@ -22,6 +22,7 @@ export const CheckPanel = ({
   const [rejectionRationale, setRejectionRationale] = useState<string>("");
   const [isRevisingAssertion, setIsRevisingAssertion] = useState<boolean>(false);
   const [revisedAssertion, setRevisedAssertion] = useState<string>("");
+  const [userResponse, setUserResponse] = useState<string>("");
 
   const sessionStep = session.steps?.find((s) => s.key === step.name);
   const sessionCheck = sessionStep?.checks.find((c) => c.key === check.name);
@@ -36,21 +37,28 @@ export const CheckPanel = ({
     messages: Message[],
     rationale: string
   ) => {
-    rejectAssertion(stepName, checkName, messages, rationale);
+    appendMessage(stepName, checkName, messages, rationale);
     setRejectionRationale("");
   };
 
+  const lastMessage =
+    sessionCheck?.messages &&
+    sessionCheck.messages.length > 0 &&
+    sessionCheck.messages[sessionCheck.messages.length - 1];
+  const isLastMessageAskUser =
+    lastMessage &&
+    lastMessage.role === "assistant" &&
+    lastMessage.content.trim().startsWith("ASK_USER");
+  const isLastMessageAsssertion =
+    lastMessage &&
+    lastMessage.role === "assistant" &&
+    lastMessage.content.trim().startsWith("ASSERTION");
   const currentAssertion = sessionCheck?.assertion
     ? sessionCheck.assertion
-    : sessionCheck?.messages &&
-      sessionCheck.messages.length > 0 &&
-      sessionCheck.messages[sessionCheck.messages.length - 1].role === "assistant" &&
-      sessionCheck.messages[sessionCheck.messages.length - 1].content.trim().startsWith("ASSERTION")
-    ? sessionCheck.messages[sessionCheck.messages.length - 1].content
-        .replace("ASSERTION:", "")
-        .replace("ASSERTION", "")
-        .trim()
+    : isLastMessageAsssertion
+    ? lastMessage.content.replace("ASSERTION:", "").replace("ASSERTION", "").trim()
     : null;
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6 bg-white rounded-xl shadow-md border border-gray-200">
       <div className="space-y-2">
@@ -110,6 +118,36 @@ export const CheckPanel = ({
                   <MessageContent showLogBar text={message.content} />
                 </div>
               ))}
+              {isLastMessageAskUser && (
+                <input
+                  type="text"
+                  placeholder="Your response..."
+                  className="w-full p-2 border rounded-md mt-2"
+                  value={userResponse}
+                  onChange={(e) => setUserResponse(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      appendMessage(step.name, check.name, sessionCheck?.messages, userResponse);
+                      setUserResponse("");
+                    }
+                  }}
+                />
+              )}
+
+              {!isLastMessageAskUser && !isLastMessageAsssertion && (
+                <div className="space-x-2">
+                  <div className="mb-2 mt-2 flex items-center px-4">
+                    <div
+                      className="h-5 w-5 text-gray-500 text-xl m-2 mt-0"
+                      style={{ filter: "grayscale(100%)" }}
+                    >
+                      {"\u{2728}"}
+                    </div>
+                    <span className="px-4 font-medium">Ursa Compass:</span>
+                  </div>
+                  <MessageContent showLogBar text="... underway" />
+                </div>
+              )}
             </div>
           )}
         </section>

@@ -272,13 +272,13 @@ export const InspectionWorkspace = ({
     }
   };
 
-  const rejectAssertion = (
+  const appendMessage = (
     stepKey: string,
     checkKey: string,
     messages: Array<Message>,
-    rationale: string
+    newMessage: string
   ) => {
-    messages = messages.concat([{ role: "user", content: rationale }]);
+    messages = messages.concat([{ role: "user", content: newMessage }]);
     socket.emit("inspection-check", {
       sessionId: activeSessionId,
       stepKey,
@@ -437,8 +437,8 @@ export const InspectionWorkspace = ({
             ) : activeCheck ? (
               <CheckPanel
                 acceptAssertion={acceptAssertion}
+                appendMessage={appendMessage}
                 check={activeCheck}
-                rejectAssertion={rejectAssertion}
                 session={activeSession}
                 startCheck={startCheck}
                 step={activeStep}
