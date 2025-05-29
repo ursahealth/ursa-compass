@@ -153,7 +153,9 @@ export default function Page({}: {}) {
                 value={actionType}
               >
                 <option value="investigate:claims">Investigate: Medical Claims</option>
-                <option value="investigate:membership">Investigate: Membership/Eligibility File</option>
+                <option value="investigate:membership">
+                  Investigate: Membership/Eligibility File
+                </option>
                 <option value="investigate:mmr">Investigate: MMR File</option>
                 <option value="investigate:pharmacy">Investigate: Pharmacy Claims</option>
                 <option value="chat:membership">Chat: Membership Information</option>

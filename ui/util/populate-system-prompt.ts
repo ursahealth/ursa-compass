@@ -1,0 +1,22 @@
+import { PlaybookCheck, Playbook, Session, PlaybookStep } from "./types";
+
+export default function populateSystemPrompt(
+  systemPrompt: string,
+  session: Session,
+  playbook: Playbook,
+  step: PlaybookStep,
+  check: PlaybookCheck
+): string {
+  let text = systemPrompt;
+
+  text = text.replace(`{{tableName}}`, session.tableName || "");
+  text = text.replace(`{{tableDocumentation}}`, session.tableDocumentation || "");
+  text = text.replace(`{{tableSql}}`, session.tableSql || "");
+  text = text.replace(`{{tableData}}`, JSON.stringify(session.tableData));
+  text = text.replace(`{{playbookGoal}}`, playbook.goal || "");
+  text = text.replace(`{{stepName}}`, step.label || "");
+  text = text.replace(`{{stepDescription}}`, step.description || "");
+  text = text.replace(`{{checkName}}`, check.label || "");
+  text = text.replace(`{{checkDescription}}`, check.description || "");
+  return text;
+}
