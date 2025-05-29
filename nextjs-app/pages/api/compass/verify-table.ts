@@ -3,11 +3,15 @@ import query from "../../../../engine/query";
 
 type ResponseData = {};
 
+function sanitize(input: string): string {
+  // Basic sanitization to prevent SQL injection
+  return input.replace(/[^a-zA-Z0-9_-]/g, "");
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
   try {
-    // TODO: consider sqli
     const [schema, tableName] = (req.query.tableName as string).split(".");
-    const sql = `select * from ${schema}.${tableName} limit 5`;
+    const sql = `select * from ${sanitize(schema)}.${sanitize(tableName)} limit 5`;
     const results = await query(
       sql,
       { databaseType: process.env.DATABASE_TYPE },

@@ -7,7 +7,6 @@ export default function parsePlaybookYaml(
 ): string {
   const step = session.steps.find((s) => s.key === stepName);
   const check = step?.checks.find((c) => c.key === checkName);
-  console.log(stepName, checkName, session, check);
   if (!check) {
     return "";
   }

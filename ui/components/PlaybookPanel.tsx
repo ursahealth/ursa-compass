@@ -121,11 +121,6 @@ export const PlaybookPanel = ({
           </ul>
         </div>
       )}
-      <div>
-        <pre>
-          <code></code>
-        </pre>
-      </div>
     </div>
   );
 };
