@@ -1,5 +1,5 @@
 import { Message } from "../util/types";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PlaybookCheck, PlaybookStep, Session } from "../util/types";
 import { DataTable } from "./DataTable";
 import MessageContent from "./MessageContent";
@@ -26,6 +26,14 @@ export const CheckPanel = ({
 
   const sessionStep = session.steps?.find((s) => s.key === step.name);
   const sessionCheck = sessionStep?.checks.find((c) => c.key === check.name);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [sessionCheck?.messages]);
+
   const acceptAssertionLocal = (stepName: string, checkName: string) => {
     const assertion = isRevisingAssertion ? revisedAssertion : currentAssertion;
     acceptAssertion(stepName, checkName, assertion);
@@ -148,6 +156,7 @@ export const CheckPanel = ({
                   <MessageContent showLogBar text="... underway" />
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </section>
