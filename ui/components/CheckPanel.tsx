@@ -9,16 +9,20 @@ export const CheckPanel = ({
   acceptAssertion,
   appendMessage,
   check,
+  isOpenChat,
   playbook,
   session,
+  setOpenChatQuestion,
   startCheck,
   step,
 }: {
   acceptAssertion: Function;
   appendMessage: Function;
   check: PlaybookCheck;
+  isOpenChat?: boolean;
   playbook: Playbook;
   session: Session;
+  setOpenChatQuestion: Function;
   startCheck: Function;
   step: PlaybookStep;
 }) => {
@@ -27,8 +31,13 @@ export const CheckPanel = ({
   const [revisedAssertion, setRevisedAssertion] = useState<string>("");
   const [userResponse, setUserResponse] = useState<string>("");
 
-  const sessionStep = session.steps?.find((s) => s.key === step.name);
-  const sessionCheck = sessionStep?.checks.find((c) => c.key === check.name);
+  let sessionCheck;
+  if (isOpenChat) {
+    sessionCheck = session.openChats?.find((c) => c.key === check.name);
+  } else {
+    const sessionStep = session.steps?.find((s) => s.key === step.name);
+    sessionCheck = sessionStep?.checks.find((c) => c.key === check.name);
+  }
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -86,6 +95,21 @@ export const CheckPanel = ({
             <p className="text-sm">{check.description}</p>
           </div>
         )}
+        {isOpenChat && (
+          <div className="ml-6 p-2 border-l-4 border-blue-500 bg-blue-50 text-blue-900">
+            <p className="text-sm">
+              This is an open chat session. You can interact with Ursa Compass freely. All accepted
+              assertions will be included in the context window of the chat.
+            </p>
+            <input
+              type="text"
+              placeholder="Type your question"
+              className="w-full p-2 border rounded-md mt-2"
+              value={sessionCheck?.openChatQuestion || ""}
+              onChange={(e) => setOpenChatQuestion(e.target.value, check.name)}
+            />
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -98,7 +122,11 @@ export const CheckPanel = ({
               disabled={checkStatus === "LOCKED"}
               onClick={() => startCheck()}
             >
-              {checkStatus === "LOCKED" ? "Check Not Ready" : sessionCheck?.messages && sessionCheck.messages.length > 0 ? "Reset Check" : "Start Check"}
+              {checkStatus === "LOCKED"
+                ? "Check Not Ready"
+                : sessionCheck?.messages && sessionCheck.messages.length > 0
+                ? "Reset Check"
+                : "Start Check"}
             </button>
           </div>
 

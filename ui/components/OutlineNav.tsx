@@ -13,6 +13,7 @@ const checkStatusMap: Record<string, string> = {
 
 export const OutlineNav = ({
   activePlaybook,
+  addOpenChat,
   focus,
   session,
   setFocus,
@@ -20,6 +21,7 @@ export const OutlineNav = ({
   tableStatus,
 }: {
   activePlaybook: Playbook;
+  addOpenChat: Function;
   focus: string | null;
   session: Session;
   setFocus: Function;
@@ -62,6 +64,35 @@ export const OutlineNav = ({
           {activePlaybook ? "Playbook: " : "Select Playbook"}
           {activePlaybook?.filename || ""}
         </li>
+        <li>
+          <span className="font-bold">Open Chats</span>
+          <button className="ml-4" onClick={() => addOpenChat()}>
+            + Add
+          </button>
+        </li>
+        <ul className="pl-4 pb-2 list-disc">
+          {(session.openChats || []).map((openChat, openChatIndex) => {
+            return (
+              <li
+                className={`ml-2 pl-2 border-b border-gray-400 ${
+                  focus === `open-chat-${openChatIndex}` ? "bg-gray-200" : ""
+                }`}
+                key={openChatIndex}
+              >
+                <span
+                  onClick={() => {
+                    setFocus(`open-chat-${openChatIndex}`);
+                  }}
+                  className="cursor-pointer"
+                >
+                  {openChat.openChatQuestion && openChat.openChatQuestion.length > 30
+                    ? `${openChat.openChatQuestion.substring(0, 30)}...`
+                    : openChat.openChatQuestion || `Open Chat ${openChatIndex + 1}`}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
         {activePlaybook?.steps.map((step, index) => (
           <React.Fragment key={index}>
             <li
