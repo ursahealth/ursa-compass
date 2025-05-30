@@ -44,15 +44,23 @@ export const InspectionWorkspace = ({
   const [baseSystemPrompt, setBaseSystemPrompt] = useState<string | null>(null);
 
   const activeSession = sessions.find((s) => s.uuid === activeSessionId);
+  const activeOpenChat =
+    focus && focus.startsWith("open-chat-")
+      ? (activeSession?.openChats || [])[Number(focus.split("-")[2])]
+      : null;
   const activePlaybook =
     playbooks.find((pb) => pb.filename === activeSession?.playbookName) || null;
   const activeStep =
     activePlaybook && focus && (focus.startsWith("step-") || focus.startsWith("check-"))
       ? activePlaybook.steps[Number(focus.split("-")[1])]
+      : activeOpenChat
+      ? { name: "open-chat", label: "Open Chat", checks: [] }
       : null;
   const activeCheck =
     activeStep && focus && focus.startsWith("check-")
       ? activeStep.checks[Number(focus.split("-")[2])]
+      : activeOpenChat
+      ? { name: activeOpenChat.key }
       : null;
 
   function updateCheckAttribute(
@@ -68,6 +76,37 @@ export const InspectionWorkspace = ({
           if (!s.steps || !s.steps.find((step) => step.key === stepKey)) {
             // create the session step for the first time if necessary
             s = { ...s, steps: (s.steps || []).concat({ key: stepKey, checks: [] }) };
+          }
+          if (stepKey === "open-chat") {
+            // XXX duplicative
+            const updatedOpenChats = (s.openChats || []).map((openChat) => {
+              if (openChat.key === checkKey) {
+                const updatedCheck = { ...openChat };
+
+                if (typeof attribute === "object") {
+                  // If attribute is an object, merge it into the check
+                  Object.assign(updatedCheck, attribute);
+                } else if (attribute === "messages") {
+                  const messagePayload = payload as Array<Message>;
+                  updatedCheck.messages = messagePayload;
+                } else if (attribute === "evidence") {
+                  const evidencePayload = payload as EvidenceItem;
+                  updatedCheck.evidence = (updatedCheck.evidence || []).concat(evidencePayload);
+                } else if (attribute === "assertion") {
+                  updatedCheck.assertion = payload as string;
+                } else if (attribute === "openChatQuestion") {
+                  updatedCheck.openChatQuestion = payload as string;
+                } else {
+                  //updatedCheck[attribute] = payload;
+                }
+
+                return updatedCheck;
+              }
+              return openChat;
+            });
+            const updatedSession = { ...s, openChats: updatedOpenChats };
+            autosaveSession(updatedSession);
+            return updatedSession;
           }
           const updatedSteps = (s.steps || []).map((step) => {
             if (step.key === stepKey) {
@@ -182,6 +221,28 @@ export const InspectionWorkspace = ({
     updateCheckAttribute(activeSessionId, stepKey, checkKey, "assertion", assertion);
   };
 
+  const addOpenChat = () => {
+    setSessions((prevSessions) => {
+      const updatedSessions = prevSessions.map((s) => {
+        if (s.uuid === activeSessionId) {
+          let openChats;
+          if (!s.openChats) {
+            openChats = [{ key: "chat-0", messages: [], evidence: [] }];
+          } else {
+            openChats = s.openChats.concat([
+              { key: `chat-${s.openChats.length}`, messages: [], evidence: [] },
+            ]);
+          }
+          const updatedSession = { ...s, openChats };
+          autosaveSession(updatedSession);
+          return updatedSession;
+        }
+        return s;
+      });
+      return updatedSessions;
+    });
+  };
+
   const autosaveSession = (session = activeSession) => {
     setTimeout(() => {
       // throttle to perform this no more than once every 10 seconds
@@ -272,26 +333,20 @@ export const InspectionWorkspace = ({
     }
   };
 
-  const rejectAssertion = (
+  const appendMessage = (
     stepKey: string,
     checkKey: string,
     messages: Array<Message>,
-    rationale: string
+    newMessage: string
   ) => {
-    messages = messages.concat([{ role: "user", content: rationale }]);
+    messages = messages.concat([{ role: "user", content: newMessage }]);
     socket.emit("inspection-check", {
       sessionId: activeSessionId,
       stepKey,
       checkKey,
       messages,
     });
-    updateCheckAttribute(
-      activeSessionId,
-      stepKey,
-      checkKey,
-      "messages",
-      messages
-    );
+    updateCheckAttribute(activeSessionId, stepKey, checkKey, "messages", messages);
   };
 
   const saveSystemPrompt = () => {
@@ -309,6 +364,10 @@ export const InspectionWorkspace = ({
       .catch((error) => {
         console.error("Error saving system prompt:", error);
       });
+  };
+
+  const setOpenChatQuestion = (question: string, checkKey: string) => {
+    updateCheckAttribute(activeSessionId, "open-chat", checkKey, "openChatQuestion", question);
   };
 
   const setPlaybookName = (playbookName: string) => {
@@ -344,12 +403,11 @@ export const InspectionWorkspace = ({
         checkKey: activeCheck?.name,
         messages,
       });
-      updateCheckAttribute(
-        activeSessionId,
-        activeStep?.name,
-        activeCheck?.name,
-        { messages, evidence: [], assertion: null },
-      );
+      updateCheckAttribute(activeSessionId, activeStep?.name, activeCheck?.name, {
+        messages,
+        evidence: [],
+        assertion: null,
+      });
     }
   };
 
@@ -434,12 +492,15 @@ export const InspectionWorkspace = ({
                   cols={100}
                 />
               </div>
-            ) : activeCheck ? (
+            ) : activeCheck || activeOpenChat ? (
               <CheckPanel
                 acceptAssertion={acceptAssertion}
+                appendMessage={appendMessage}
                 check={activeCheck}
-                rejectAssertion={rejectAssertion}
+                isOpenChat={!!activeOpenChat}
+                playbook={activePlaybook}
                 session={activeSession}
+                setOpenChatQuestion={setOpenChatQuestion}
                 startCheck={startCheck}
                 step={activeStep}
               />
@@ -453,6 +514,7 @@ export const InspectionWorkspace = ({
             {activeSession && (
               <OutlineNav
                 activePlaybook={activePlaybook}
+                addOpenChat={addOpenChat}
                 focus={focus}
                 setFocus={setFocus}
                 session={activeSession}

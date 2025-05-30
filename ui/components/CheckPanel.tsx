@@ -1,30 +1,51 @@
 import { Message } from "../util/types";
-import { useState } from "react";
-import { PlaybookCheck, PlaybookStep, Session } from "../util/types";
+import { useEffect, useRef, useState } from "react";
+import { Playbook, PlaybookCheck, PlaybookStep, Session } from "../util/types";
 import { DataTable } from "./DataTable";
 import MessageContent from "./MessageContent";
+import getCheckStatus from "../util/get-check-status";
 
 export const CheckPanel = ({
   acceptAssertion,
+  appendMessage,
   check,
-  rejectAssertion,
+  isOpenChat,
+  playbook,
   session,
+  setOpenChatQuestion,
   startCheck,
   step,
 }: {
   acceptAssertion: Function;
+  appendMessage: Function;
   check: PlaybookCheck;
-  rejectAssertion: Function;
+  isOpenChat?: boolean;
+  playbook: Playbook;
   session: Session;
+  setOpenChatQuestion: Function;
   startCheck: Function;
   step: PlaybookStep;
 }) => {
   const [rejectionRationale, setRejectionRationale] = useState<string>("");
   const [isRevisingAssertion, setIsRevisingAssertion] = useState<boolean>(false);
   const [revisedAssertion, setRevisedAssertion] = useState<string>("");
+  const [userResponse, setUserResponse] = useState<string>("");
 
-  const sessionStep = session.steps?.find((s) => s.key === step.name);
-  const sessionCheck = sessionStep?.checks.find((c) => c.key === check.name);
+  let sessionCheck;
+  if (isOpenChat) {
+    sessionCheck = session.openChats?.find((c) => c.key === check.name);
+  } else {
+    const sessionStep = session.steps?.find((s) => s.key === step.name);
+    sessionCheck = sessionStep?.checks.find((c) => c.key === check.name);
+  }
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [sessionCheck?.messages]);
+
   const acceptAssertionLocal = (stepName: string, checkName: string) => {
     const assertion = isRevisingAssertion ? revisedAssertion : currentAssertion;
     acceptAssertion(stepName, checkName, assertion);
@@ -36,21 +57,29 @@ export const CheckPanel = ({
     messages: Message[],
     rationale: string
   ) => {
-    rejectAssertion(stepName, checkName, messages, rationale);
+    appendMessage(stepName, checkName, messages, rationale);
     setRejectionRationale("");
   };
 
+  const checkStatus = getCheckStatus(session, playbook, step.name, check.name);
+  const lastMessage =
+    sessionCheck?.messages &&
+    sessionCheck.messages.length > 0 &&
+    sessionCheck.messages[sessionCheck.messages.length - 1];
+  const isLastMessageAskUser =
+    lastMessage &&
+    lastMessage.role === "assistant" &&
+    lastMessage.content.trim().startsWith("ASK_USER");
+  const isLastMessageAsssertion =
+    lastMessage &&
+    lastMessage.role === "assistant" &&
+    lastMessage.content.trim().startsWith("ASSERTION");
   const currentAssertion = sessionCheck?.assertion
     ? sessionCheck.assertion
-    : sessionCheck?.messages &&
-      sessionCheck.messages.length > 0 &&
-      sessionCheck.messages[sessionCheck.messages.length - 1].role === "assistant" &&
-      sessionCheck.messages[sessionCheck.messages.length - 1].content.trim().startsWith("ASSERTION")
-    ? sessionCheck.messages[sessionCheck.messages.length - 1].content
-        .replace("ASSERTION:", "")
-        .replace("ASSERTION", "")
-        .trim()
+    : isLastMessageAsssertion
+    ? lastMessage.content.replace("ASSERTION:", "").replace("ASSERTION", "").trim()
     : null;
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6 bg-white rounded-xl shadow-md border border-gray-200">
       <div className="space-y-2">
@@ -66,6 +95,21 @@ export const CheckPanel = ({
             <p className="text-sm">{check.description}</p>
           </div>
         )}
+        {isOpenChat && (
+          <div className="ml-6 p-2 border-l-4 border-blue-500 bg-blue-50 text-blue-900">
+            <p className="text-sm">
+              This is an open chat session. You can interact with Ursa Compass freely. All accepted
+              assertions will be included in the context window of the chat.
+            </p>
+            <input
+              type="text"
+              placeholder="Type your question"
+              className="w-full p-2 border rounded-md mt-2"
+              value={sessionCheck?.openChatQuestion || ""}
+              onChange={(e) => setOpenChatQuestion(e.target.value, check.name)}
+            />
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -74,11 +118,15 @@ export const CheckPanel = ({
             <h3 className="text-xl font-semibold text-gray-800">Messages</h3>
             <button
               type="button"
-              className="px-4 py-2 bg-green-pine text-white rounded-md hover:bg-green-forest focus:outline-none focus:ring-2 focus:ring-green-pine"
+              className="px-4 py-2 bg-green-pine text-white rounded-md hover:bg-green-forest focus:outline-none focus:ring-2 focus:ring-green-pine disabled:bg-gray-300"
+              disabled={checkStatus === "LOCKED"}
               onClick={() => startCheck()}
             >
-              {sessionCheck?.messages && sessionCheck.messages.length > 0 ? "Reset " : "Start "}
-              Check
+              {checkStatus === "LOCKED"
+                ? "Check Not Ready"
+                : sessionCheck?.messages && sessionCheck.messages.length > 0
+                ? "Reset Check"
+                : "Start Check"}
             </button>
           </div>
 
@@ -110,6 +158,37 @@ export const CheckPanel = ({
                   <MessageContent showLogBar text={message.content} />
                 </div>
               ))}
+              {isLastMessageAskUser && (
+                <input
+                  type="text"
+                  placeholder="Your response..."
+                  className="w-full p-2 border rounded-md mt-2"
+                  value={userResponse}
+                  onChange={(e) => setUserResponse(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      appendMessage(step.name, check.name, sessionCheck?.messages, userResponse);
+                      setUserResponse("");
+                    }
+                  }}
+                />
+              )}
+
+              {!isLastMessageAskUser && !isLastMessageAsssertion && (
+                <div className="space-x-2">
+                  <div className="mb-2 mt-2 flex items-center px-4">
+                    <div
+                      className="h-5 w-5 text-gray-500 text-xl m-2 mt-0"
+                      style={{ filter: "grayscale(100%)" }}
+                    >
+                      {"\u{2728}"}
+                    </div>
+                    <span className="px-4 font-medium">Ursa Compass:</span>
+                  </div>
+                  <MessageContent showLogBar text="... underway" />
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </section>

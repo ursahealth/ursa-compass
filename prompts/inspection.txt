@@ -25,6 +25,11 @@ We're going to start with table {{tableName}}.
 
 The existing documentation is: {{tableDocumentation}}
 
+We've already determined the following background information about this table's data:
+-------------------------
+{{backgroundAssertions}}
+------------------------- (end of background information)
+
 I'm anticipating that you're going to start by running some SQL to investigate this table, and I have already constructed and run the first such query
 
 QUERY_DATABASE

@@ -13,6 +13,7 @@ export interface SessionCheck {
   messages: Array<Message>;
   evidence: Array<EvidenceItem>;
   assertion?: string | null;
+  openChatQuestion?: string;
 }
 
 export interface SessionStep {
@@ -32,6 +33,7 @@ export interface Session {
   playbookName: string;
   focusedStep?: string;
   steps: Array<SessionStep>;
+  openChats?: Array<SessionCheck>;
 }
 export interface PlaybookCheck {
   name: string;
