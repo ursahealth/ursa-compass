@@ -53,9 +53,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               socket.emit("update", "evidence", keys, evidence);
             },
           });
-        } catch (err) {
+        } catch (err: any) {
           console.error(err);
-          socket.emit("message", { text: "Sorry, I ran into an error" });
+          socket.emit("log", { text: err.message });
         }
         console.log("finished inspection check request", keys);
       });

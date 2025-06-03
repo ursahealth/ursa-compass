@@ -47,7 +47,8 @@ async function queryAI(messages, options = {}) {
     }),
     contentType: "application/json",
     accept: "application/json",
-    modelId: options?.modelId || "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    // "us.anthropic.claude-sonnet-4-20250514-v1:0"
+    modelId: options?.modelId || "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
   };
 
   const command = new InvokeModelCommand(params);

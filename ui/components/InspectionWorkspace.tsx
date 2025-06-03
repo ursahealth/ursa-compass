@@ -165,8 +165,7 @@ export const InspectionWorkspace = ({
       return;
     }
     socket.on("log", (incomingLog: string) => {
-      console.log("incoming", incomingLog);
-      // TODO: handle incoming log
+      console.log("server log", incomingLog);
     });
     socket.on("update", (type: string, keys: any, payload: Array<Message> | EvidenceItem) => {
       updateCheckAttribute(keys.sessionId, keys.stepKey, keys.checkKey, type, payload);
