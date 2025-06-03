@@ -9,14 +9,6 @@ import { TableNamePanel } from "./TableNamePanel";
 import parsePlaybookYaml from "../util/parse-playbook-yml";
 import populateSystemPrompt from "../util/populate-system-prompt";
 
-/*
-export interface CopilotUIProps {
-  userId: string;
-  onSendMessage: (message: string) => void;
-  messages: { sender: "user" | "assistant"; text: string }[];
-}
-*/
-
 function generateDefaultSessionName(date = new Date()) {
   const timeString = date.toLocaleTimeString([], {
     hour: "numeric",

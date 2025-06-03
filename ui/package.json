@@ -1,5 +1,5 @@
 {
-  "name": "ursa-copilot-ui",
+  "name": "ursa-compass-ui",
   "version": "0.1.0",
   "main": "lib/index.js",
   "module": "esm/index.js",
