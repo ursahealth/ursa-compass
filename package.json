@@ -1,6 +1,6 @@
 {
   "name": "ursa-compass",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Ursa Health's AI copilot for data integration",
   "type": "module",
   "main": "./lib/index.cjs",
@@ -10,13 +10,10 @@
   },
   "files": [
     "lib",
-    "esm",
-    "prompts"
+    "esm"
   ],
   "scripts": {
-    "dev:ui": "rollup -c rollup.ui.config.js --watch",
     "build": "rollup -c",
-    "build:ui": "rollup -c rollup.ui.config.js",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
