@@ -246,6 +246,7 @@ export const InspectionWorkspace = ({
           body: JSON.stringify(session),
         })
           .then(() => {
+            // TODO: make sure it's a 200
             console.log("Session autosaved:", session.uuid, session.name);
           })
           .catch((error) => {

@@ -1,13 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Server, Socket } from "socket.io";
 import { Socket as NetSocket } from "net";
+import query from "@/app/lib/query";
 import handleCheck from "../../../../engine/handler";
 
 type EnhancedSocket = NetSocket & { server: { io?: Server } };
-
-type Report = {
-  messages: Array<{ role: string; content: string }>;
-};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const socket = res.socket as EnhancedSocket | null;
@@ -29,12 +26,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     io.on("connection", (socket) => {
       socket.emit("log", { text: "Connection is ready" });
 
-      socket.on("start-check", async (content) => {
-        console.log("got check request", content);
-        // socket.emit("log", content);
-        // TODO
-      });
-
       socket.on("inspection-check", async (content) => {
         const keys = {
           sessionId: content.sessionId,
@@ -52,6 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             sendEvidence: (evidence: { sql: string; results: any }) => {
               socket.emit("update", "evidence", keys, evidence);
             },
+            query
           });
         } catch (err: any) {
           console.error(err);

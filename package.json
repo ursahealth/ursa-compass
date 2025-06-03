@@ -10,7 +10,9 @@
   },
   "files": [
     "lib",
-    "esm"
+    "esm",
+    "playbooks",
+    "prompts"
   ],
   "scripts": {
     "build": "rollup -c",

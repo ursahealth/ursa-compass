@@ -1,6 +1,5 @@
 import _ from "lodash";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-import query from "./query.js";
 
 const bedrockClients = {};
 
@@ -81,7 +80,7 @@ export default async function handler(payload, options) {
     for (let i = 0; i < 5; i++) {
       sql = extractCodeBlock(response);
       try {
-        result = await query(sql, options);
+        result = await options.query(sql, options);
         options.sendEvidence({ sql, result });
         break;
       } catch (sqlError) {
