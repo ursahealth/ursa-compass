@@ -11,7 +11,7 @@ export default function parsePlaybookYaml(filename: string, rawContent: string):
   let isAccumulatingDependencies = false;
   let dependencies: string[] = [];
 
-  for (let raw of lines) {
+  for (let raw of (lines || []).concat("END OF PLAYBOOK")) {
     const line = raw.replace(/\t/g, "  "); // tabs → spaces
     if (!line.trim() || line.trim().startsWith("#")) continue; // skip blank/comment
 
@@ -25,7 +25,8 @@ export default function parsePlaybookYaml(filename: string, rawContent: string):
       isAccumulatingDescription &&
       (line.trim().startsWith("- step") ||
         line.trim().startsWith("- check:") ||
-        line.trim().startsWith("dependencies:"))
+        line.trim().startsWith("dependencies:") ||
+        line.trim().startsWith("END OF PLAYBOOK"))
     ) {
       isAccumulatingDescription = false;
       if (currentScope === "step" && currentStep) {
@@ -41,7 +42,9 @@ export default function parsePlaybookYaml(filename: string, rawContent: string):
 
     if (
       isAccumulatingDependencies &&
-      (line.trim().startsWith("- step") || line.trim().startsWith("- check:"))
+      (line.trim().startsWith("- step") ||
+        line.trim().startsWith("- check:") ||
+        line.trim().startsWith("END OF PLAYBOOK"))
     ) {
       isAccumulatingDependencies = false;
       if (currentScope === "step" && currentStep) {

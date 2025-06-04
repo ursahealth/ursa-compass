@@ -88,5 +88,6 @@ describe("parsePlaybookYML", () => {
     expect(result.steps[0].checks.length).toBe(6);
     expect(result.steps[1].label).toBe("Distinguish Institutional vs. Professional claims.");
     expect(result.steps[1].description).toContain(`How do we determine which rows are professional claims and which rows are institutional claims? Sometimes\nprofessional`);
+    expect((result.steps[1].checks[4].dependencies || [])[0]).toBe("harmonize-indicators");
   });
 });
