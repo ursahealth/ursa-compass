@@ -5,6 +5,7 @@ export const SessionNav = ({
   activeSessionId,
   createNewSession,
   deleteSession,
+  Navbar,
   renameSession,
   sessions,
   setActiveSessionId,
@@ -12,6 +13,7 @@ export const SessionNav = ({
   activeSessionId: string | null;
   createNewSession: Function;
   deleteSession: Function;
+  Navbar: React.ComponentType;
   renameSession: Function;
   sessions: Array<Session>;
   setActiveSessionId: Function;
@@ -136,6 +138,7 @@ export const SessionNav = ({
           );
         })}
       </ul>
+      {Navbar && (<Navbar />)}
     </div>
   );
 };

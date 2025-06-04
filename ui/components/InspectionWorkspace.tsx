@@ -21,10 +21,12 @@ let autosaveTimestamp: number | null = null;
 
 export const InspectionWorkspace = ({
   isSocketInitialized,
+  Navbar,
   socket,
   socketInitializer,
 }: {
   isSocketInitialized: boolean;
+  Navbar: React.ComponentType;
   socket: { on: Function; off: Function; emit: Function };
   socketInitializer: Function;
 }) => {
@@ -267,7 +269,10 @@ export const InspectionWorkspace = ({
       fetch(`/api/compass/verify-table?tableName=${encodeURIComponent(tableName)}`)
         .then((response) => response.json())
         .then((data) => {
-          const updatedSession = Object.assign({}, activeSession, {
+          const tableDocumentation = data.tableDocumentation
+            ? { tableDocumentation: data.tableDocumentation }
+            : {};
+          const updatedSession = Object.assign({}, activeSession, tableDocumentation, {
             tableStatus: "SUCCESS",
             tableData: data.results,
             tableSql: data.sql,
@@ -433,6 +438,7 @@ export const InspectionWorkspace = ({
             activeSessionId={activeSessionId}
             createNewSession={createNewSession}
             deleteSession={deleteSession}
+            Navbar={Navbar}
             renameSession={renameSession}
             sessions={sessions}
             setActiveSessionId={setActiveSessionId}
