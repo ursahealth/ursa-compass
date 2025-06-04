@@ -1,0 +1,131 @@
+playbook:
+  goal: Understand structure, content, identifiers, financial components, and transaction handling of incoming medical claims data (Institutional and Professional).
+  steps:
+    - step: medical-claim-identification
+      label: Determine primary medical claim identifiers (header and line) and key linking fields.
+      checks:
+        - check: id-header-claim-number
+          label: Identify the primary header-level claim identifier.
+          description: "This could be a claim control number or a synthetic key based on member, provider, and dates for institutional claims."
+        - check: id-line-transaction-id
+          label: Identify the line-level transaction identifier (e.g., claim number + service line + sequence number).
+          description: "Medical claims often have a more granular transaction ID at the service line level."
+        - check: id-source-local-claim-header
+          label: Define how a source_local_claim_id for the header is constructed or identified.
+          dependencies:
+            - id-header-claim-number
+        - check: id-source-local-claim-line
+          label: Define how a source_local_claim_line_id is constructed (e.g., header ID + line number).
+          dependencies:
+            - id-header-claim-number # Line ID often depends on header ID
+            - core-line-number
+        - check: id-member-linkage-medical
+          label: Verify how medical claims link to member/patient data.
+
+    - step: medical-claim-type-differentiation
+      label: Distinguish Institutional vs. Professional claims.
+      description: "Determine how to differentiate between institutional (facility) and professional (practitioner) claims."
+      checks:
+        - check: type-claim-type-code
+          label: Check for an explicit claim_type_code field and its distinct values (e.g., 'I', 'P').
+        - check: type-type-of-bill
+          label: Check presence and population of type_of_bill codes (indicative of Institutional).
+        - check: type-place-of-service
+          label: Check presence and population of place_of_service codes (indicative of Professional).
+        - check: type-revenue-codes
+          label: Check for presence of revenue codes (strongly indicative of Institutional).
+        - check: type-cpt-hcpcs-codes
+          label: Check for CPT/HCPCS codes (present on Professional, often on Institutional lines too).
+        - check: type-harmonize-indicators
+          label: Verify harmonization between different claim type indicators if multiple exist.
+          dependencies:
+            - type-claim-type-code
+            - type-type-of-bill
+            - type-place-of-service
+        - check: type-reliable-claim-class-medical
+          label: Decide on the most reliable field(s) to determine claim class (Institutional vs. Professional).
+          dependencies:
+            - type-harmonize-indicators
+
+    - step: medical-core-data-elements
+      label: Identify and assess core medical claim data elements (header and line).
+      checks:
+        - check: core-service-dates
+          label: Verify presence and format of service start and end dates (both header and line).
+        - check: core-admission-discharge-dates
+          label: For institutional claims, verify presence of admission and discharge dates.
+        - check: core-diagnosis-codes
+          label: Identify principal and other diagnosis codes (ICD-10) and their linkage (header/line).
+        - check: core-procedure-codes-cpt-hcpcs
+          label: Identify CPT/HCPCS procedure codes on service lines.
+        - check: core-procedure-codes-icd-pcs
+          label: Identify ICD-10-PCS procedure codes (typically on institutional inpatient claims).
+        - check: core-revenue-center-codes
+          label: Identify revenue center codes on institutional claim lines.
+        - check: core-provider-billing
+          label: Identify billing provider information (NPI, TIN).
+        - check: core-provider-rendering-service
+          label: Identify rendering/service provider information (typically NPI, for professional claims).
+        - check: core-provider-facility
+          label: Identify facility provider information (for institutional claims).
+        - check: core-provider-attending-operating
+          label: Identify attending and operating provider information (for institutional claims).
+        - check: core-line-number
+          label: Verify presence and consistency of service line numbers.
+
+    - step: medical-transaction-handling
+      label: Analyze and define rules for handling medical claim transactions, especially across multiple files.
+      description: "Medical claims can be restated or adjusted across different file submissions."
+      checks:
+        - check: transaction-cross-file-consistency
+          label: Analyze how claim details (especially financials) change across different file ingestions for the same claim/line.
+          description: "Dollar amounts or statuses for the same transaction can change in subsequent files."
+        - check: transaction-most-recent-strategy-medical
+          label: Define strategy to identify the most recent, authoritative version of a claim or claim line.
+          description: "Often involves using a file effective date or ingestion timestamp."
+          dependencies:
+            - transaction-cross-file-consistency
+        - check: transaction-reversals-adjustments-medical
+          label: Identify how claim reversals or adjustments are indicated.
+          description: "Unlike Rx, medical claim adjustments might be full restatements rather than explicit reversal transactions."
+        - check: transaction-deleted-claims
+          label: Determine if claims/lines are explicitly deleted or just disappear from later files.
+          description: "Critical for restated data - absence in a later file might mean deletion."
+        - check: transaction-header-line-financial-granularity
+          label: Determine if financial amounts are primarily at header or line level, and how this is indicated.
+          description: "Institutional claims often have header-level financials, professional at line-level. This impacts aggregation."
+          dependencies:
+            - type-reliable-claim-class-medical # Knowing claim type is crucial here
+
+    - step: medical-financial-elements
+      label: Assess financial components of medical claims.
+      checks:
+        - check: financial-paid-amount-medical
+          label: Identify and validate plan paid amounts (header and line).
+        - check: financial-charged-amount-medical
+          label: Identify charged amounts.
+        - check: financial-allowed-amount-medical
+          label: Identify allowed amounts.
+        - check: financial-patient-responsibility-medical
+          label: Identify patient responsibility amounts (copay, coinsurance, deductible).
+        - check: financial-zero-dollar-claims
+          label: Analyze handling of $0 paid amounts – are they true $0 payments or data issues?
+        - check: financial-negative-amounts-medical
+          label: Analyze handling of negative dollar amounts (e.g., for recoupments or adjustments).
+          description: "Negative amounts might indicate recoupments or complex adjustments."
+        - check: financial-denied-claim-impact
+          label: Determine financial impact of denied claims/lines (e.g., paid amount should be $0).
+          dependencies:
+            - status-denied-claims-medical # Financials depend on claim status
+
+    - step: medical-claim-status
+      label: Determine and interpret various claim statuses.
+      checks:
+        - check: status-denied-claims-medical
+          label: Identify how denied claims/lines are flagged.
+          description: "Check for specific denial codes or status flags."
+        - check: status-pended-claims-medical
+          label: Identify if 'pended' or 'suspended' statuses exist and their implications.
+          description: "Pended claims might be provisionally approved or awaiting further adjudication."
+        - check: status-adjustment-flags
+          label: Check for flags indicating a claim/line is an adjustment to a previous version.

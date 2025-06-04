@@ -1,0 +1,121 @@
+playbook:
+  goal: Understand structure, content, identifiers, financial components, and transaction handling of incoming pharmacy (Rx) claims data.
+  steps:
+    - step: rx-claim-identification
+      label: Determine primary Rx claim identifiers and key linking fields.
+      checks:
+        - check: id-transaction-claim-number
+          label: Identify the primary transaction ID (often called claim number in Rx).
+          description: "Pharmacy transactions often use a 'claim number' that acts as a transaction ID."
+        - check: id-source-local-claim
+          label: Identify fields for constructing a source_local_claim_id (e.g., NDC, fill date, patient identifier).
+          description: "A potential composite key could be NDC, fill date, and patient identifier."
+          dependencies:
+            - id-transaction-claim-number # The claim number is part of the composite key
+            - core-ndc # NDC is part of the composite key
+            - core-fill-date # Fill date is part of the composite key
+            - id-member-linkage # Patient identifier is part of the composite key
+        - check: id-claim-reference-number
+          label: Check for claim reference numbers used to link reversed transactions.
+          description: "When transactions get reversed, they reference each other in the claim reference number."
+        - check: id-member-linkage
+          label: Verify how Rx claims link to member/patient data.
+          description: "Ensure semantic mapping for member data is established to link Rx claims."
+
+    - step: rx-core-data-elements
+      label: Identify and assess core pharmacy claim data elements.
+      checks:
+        - check: core-ndc
+          label: Verify presence and format of National Drug Code (NDC).
+          description: "NDC is a key component of an Rx claim. Ensure 11-digit format without dashes."
+        - check: core-fill-date
+          label: Verify presence and format of fill date.
+        - check: core-days-supply
+          label: Check presence and reliability of Days Supply.
+          description: "Days supply is considered a very standard and reliable field for pharmacy claims, more so than quantity. Should not be zero on real claims."
+        - check: core-quantity
+          label: Check presence and format of Quantity.
+          description: "Quantity is present but days supply is often more reliable."
+        - check: core-prescribing-provider
+          label: Identify prescribing provider information.
+        - check: core-filling-provider-pharmacy
+          label: Identify filling provider (pharmacy) information.
+          description: "The filling provider is the pharmacy."
+        - check: core-prescription-number
+          label: Check for prescription number.
+
+    - step: rx-transaction-handling
+      label: Analyze and define rules for handling Rx claim transactions, especially duplicates and reversals.
+      description: "Pharmacy claims can have multiple transactions for the same event, including original fills, reversals, and adjustments."
+      checks:
+        - check: transaction-status-codes
+          label: Identify distinct transaction status codes (e.g., approved, reversed, reversal).
+        - check: transaction-reversals
+          label: Analyze how reversals are indicated and linked (e.g., claim reference number, negative dollar amounts).
+          description: "Reversed transactions often reference the original via a claim reference number. Reversals can have negative dollar amounts."
+          dependencies:
+            - id-claim-reference-number
+        - check: transaction-deduplication-strategy
+          label: Define strategy for handling apparent duplicates or multiple lines for the same drug and fill.
+          description: |
+            For apparent duplicates with the same transaction ID, prioritize the one with non-zero days supply.
+            Sorting by transaction effective date and/or absolute value of paid amount might be needed.
+            Day supply descending is a good sort order for deduplication.
+          dependencies:
+            - id-transaction-claim-number
+            - core-days-supply
+            - transaction-effective-date
+            - financial-paid-amount # Used in sorting for deduplication
+        - check: transaction-effective-date
+          label: Check for transaction effective dates or paid dates to determine sequence.
+        - check: transaction-most-recent-version
+          label: Establish logic to use the most recent transaction version.
+          dependencies:
+            - transaction-effective-date
+            - transaction-deduplication-strategy # Depends on having a strategy to pick the correct transaction among duplicates
+
+    - step: rx-financial-elements
+      label: Assess financial components of Rx claims.
+      checks:
+        - check: financial-paid-amount
+          label: Identify and validate plan paid amounts.
+          description: "Includes ingredient cost, dispensing fee, sales tax, all rolling up to total allowed amount, then paid amount, COB paid, patient responsibility, and patient paid."
+        - check: financial-patient-responsibility
+          label: Identify patient responsibility amounts (copay, coinsurance, deductible).
+        - check: financial-dollar-amount-consistency
+          label: Check for inconsistent dollar amounts across related transactions or files.
+        - check: financial-negative-amounts
+          label: Analyze handling of negative dollar amounts (e.g., for reversals or rebates).
+          description: "Reversals of discounts/coupons can also result in negative amounts being reversed to positive."
+          dependencies:
+            - transaction-reversals # Understanding reversals is key to handling negative amounts
+        - check: financial-ingredient-cost
+          label: Check for ingredient cost.
+        - check: financial-dispensing-fee
+          label: Check for dispensing fee.
+        - check: financial-sales-tax
+          label: Check for sales tax.
+        - check: financial-total-rx-cost
+          label: Identify total Rx cost and its components.
+          dependencies:
+            - financial-ingredient-cost
+            - financial-dispensing-fee
+            - financial-sales-tax
+            - financial-paid-amount # All these contribute to total Rx cost
+            - financial-patient-responsibility
+
+    - step: rx-claim-status-and-type
+      label: Determine claim status and specific Rx claim types (e.g., Part B vs. Part D).
+      checks:
+        - check: status-denied-claims
+          label: Identify how denied Rx claims are flagged and handled financially.
+          dependencies:
+            - financial-paid-amount # Denied claims affect paid amounts
+        - check: status-claim-lifecycle
+          label: Understand the lifecycle of Rx claims (e.g., initial, reversed, adjusted).
+          dependencies:
+            - transaction-reversals
+            - transaction-status-codes
+        - check: type-partb-vs-partd
+          label: Check for indicators if Rx claim is for Part B or Part D covered drugs.
+          description: "Pharmacy claims might need a flag to indicate if they are Part B or Part D covered. It can be hard to impute this."
