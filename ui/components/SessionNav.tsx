@@ -13,7 +13,7 @@ export const SessionNav = ({
   activeSessionId: string | null;
   createNewSession: Function;
   deleteSession: Function;
-  Navbar: React.ComponentType;
+  Navbar?: React.ComponentType;
   renameSession: Function;
   sessions: Array<Session>;
   setActiveSessionId: Function;

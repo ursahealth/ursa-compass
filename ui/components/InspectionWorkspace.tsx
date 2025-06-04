@@ -26,7 +26,7 @@ export const InspectionWorkspace = ({
   socketInitializer,
 }: {
   isSocketInitialized: boolean;
-  Navbar: React.ComponentType;
+  Navbar?: React.ComponentType;
   socket: { on: Function; off: Function; emit: Function };
   socketInitializer: Function;
 }) => {
