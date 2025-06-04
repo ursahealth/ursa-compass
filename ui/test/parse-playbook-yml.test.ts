@@ -12,7 +12,7 @@ const testPlaybook = `playbook:
         - check: id-consistency
           label: Assess reliability and population consistency of identifier fields.
           dependencies:
-            - id-fields
+            - id-fields # here is a comment to ignore
         - check: primary-patient-id
           label: Determine primary source_local_patient_id candidate.
           dependencies: 
@@ -88,5 +88,6 @@ describe("parsePlaybookYML", () => {
     expect(result.steps[0].checks.length).toBe(6);
     expect(result.steps[1].label).toBe("Distinguish Institutional vs. Professional claims.");
     expect(result.steps[1].description).toContain(`How do we determine which rows are professional claims and which rows are institutional claims? Sometimes\nprofessional`);
+    expect((result.steps[1].checks[4].dependencies || [])[0]).toBe("harmonize-indicators");
   });
 });

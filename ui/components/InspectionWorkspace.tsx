@@ -9,14 +9,6 @@ import { TableNamePanel } from "./TableNamePanel";
 import parsePlaybookYaml from "../util/parse-playbook-yml";
 import populateSystemPrompt from "../util/populate-system-prompt";
 
-/*
-export interface CopilotUIProps {
-  userId: string;
-  onSendMessage: (message: string) => void;
-  messages: { sender: "user" | "assistant"; text: string }[];
-}
-*/
-
 function generateDefaultSessionName(date = new Date()) {
   const timeString = date.toLocaleTimeString([], {
     hour: "numeric",
@@ -29,10 +21,12 @@ let autosaveTimestamp: number | null = null;
 
 export const InspectionWorkspace = ({
   isSocketInitialized,
+  Navbar,
   socket,
   socketInitializer,
 }: {
   isSocketInitialized: boolean;
+  Navbar?: React.ComponentType;
   socket: { on: Function; off: Function; emit: Function };
   socketInitializer: Function;
 }) => {
@@ -165,8 +159,7 @@ export const InspectionWorkspace = ({
       return;
     }
     socket.on("log", (incomingLog: string) => {
-      console.log("incoming", incomingLog);
-      // TODO: handle incoming log
+      console.log("server log", incomingLog);
     });
     socket.on("update", (type: string, keys: any, payload: Array<Message> | EvidenceItem) => {
       updateCheckAttribute(keys.sessionId, keys.stepKey, keys.checkKey, type, payload);
@@ -255,6 +248,7 @@ export const InspectionWorkspace = ({
           body: JSON.stringify(session),
         })
           .then(() => {
+            // TODO: make sure it's a 200
             console.log("Session autosaved:", session.uuid, session.name);
           })
           .catch((error) => {
@@ -275,7 +269,10 @@ export const InspectionWorkspace = ({
       fetch(`/api/compass/verify-table?tableName=${encodeURIComponent(tableName)}`)
         .then((response) => response.json())
         .then((data) => {
-          const updatedSession = Object.assign({}, activeSession, {
+          const tableDocumentation = data.tableDocumentation
+            ? { tableDocumentation: data.tableDocumentation }
+            : {};
+          const updatedSession = Object.assign({}, activeSession, tableDocumentation, {
             tableStatus: "SUCCESS",
             tableData: data.results,
             tableSql: data.sql,
@@ -441,6 +438,7 @@ export const InspectionWorkspace = ({
             activeSessionId={activeSessionId}
             createNewSession={createNewSession}
             deleteSession={deleteSession}
+            Navbar={Navbar}
             renameSession={renameSession}
             sessions={sessions}
             setActiveSessionId={setActiveSessionId}

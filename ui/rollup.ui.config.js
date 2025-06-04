@@ -7,18 +7,27 @@ import peerDepsExternal from "rollup-plugin-peer-deps-external";
 import typescript from "@rollup/plugin-typescript";
 
 export default {
-  input: "ui/index.ts",
+  input: "index.ts",
   output: [
-    { dir: "ui/esm", format: "esm", sourcemap: true },
-    { dir: "ui/lib", format: "cjs", sourcemap: true },
+    { dir: "esm", format: "esm", sourcemap: true },
+    { dir: "lib", format: "cjs", sourcemap: true },
   ],
   plugins: [
     peerDepsExternal(),
     resolve(),
     commonjs(),
     json(),
-    postcss(),
-    typescript({ tsconfig: "./ui/tsconfig.json" }),
+    postcss({
+      config: {
+        path: './postcss.config.js',
+      },
+      extensions: ['.css'],
+      minimize: true,
+      inject: {
+        insertAt: 'top',
+      },
+    }),
+    typescript({ tsconfig: "./tsconfig.json" }),
     babel({
       babelHelpers: "bundled",
       exclude: "node_modules/**",

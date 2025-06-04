@@ -1,5 +1,5 @@
 {
-  "name": "ursa-copilot-engine",
+  "name": "ursa-compass-engine",
   "version": "0.0.1",
   "description": "",
   "type": "module",
@@ -12,8 +12,7 @@
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.540.0",
     "dotenv": "^16.4.5",
-    "lodash": "^4.17.21",
-    "pg": "^8.11.5"
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "eslint": "^8.57.0"

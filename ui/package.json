@@ -1,19 +1,36 @@
 {
-  "name": "ursa-copilot-ui",
-  "version": "0.1.0",
+  "name": "ursa-compass-ui",
+  "version": "0.2.2",
+  "description": "UI components for Ursa Compass",
   "main": "lib/index.js",
   "module": "esm/index.js",
   "types": "types/index.d.ts",
+  "exports": {
+    "import": "./esm/index.js",
+    "require": "./lib/index.js"
+  },
   "peerDependencies": {
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
   },
   "devDependencies": {
-    "@types/react": "^19.1.2"
+    "@tailwindcss/forms": "^0.5.10",
+    "@types/react": "^19.1.2",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "tailwindcss": "^3.4.17"
   },
+  "files": [
+    "lib/",
+    "esm/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "rollup -c ../rollup.ui.config.js",
-    "dev": "rollup -c ../rollup.ui.config.js --watch",
-    "test": "npx vitest run"
+    "build": "rollup -c ./rollup.ui.config.js",
+    "dev": "rollup -c ./rollup.ui.config.js --watch",
+    "test": "npx vitest run",
+    "prepublishOnly": "npm run build && npm run test"
   }
 }

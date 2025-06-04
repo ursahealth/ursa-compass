@@ -9,10 +9,10 @@ export default function getCheckStatus(
   const playbookStep = playbook.steps.find((s) => s.name === stepName);
   const playbookCheck = playbookStep?.checks.find((c) => c.name === checkName);
   if (playbookCheck?.dependencies && playbookCheck.dependencies.length > 0) {
-    const dependencyStatuses = playbookCheck.dependencies.map((dep) =>
-      getCheckStatus(session, playbook, stepName, dep)
-    );
-
+    const dependencyStatuses = playbookCheck.dependencies.map((dep) => {
+      const stepOfDependency = playbook.steps.find((s) => s.checks.some((c) => c.name === dep));
+      return getCheckStatus(session, playbook, stepOfDependency?.name || stepName, dep);
+    });
     if (dependencyStatuses.some((status) => status !== "FINISHED")) {
       return "LOCKED";
     }

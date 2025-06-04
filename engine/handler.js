@@ -1,6 +1,5 @@
 import _ from "lodash";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-import query from "./query.js";
 
 const bedrockClients = {};
 
@@ -47,7 +46,8 @@ async function queryAI(messages, options = {}) {
     }),
     contentType: "application/json",
     accept: "application/json",
-    modelId: options?.modelId || "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    // "us.anthropic.claude-sonnet-4-20250514-v1:0"
+    modelId: options?.modelId || "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
   };
 
   const command = new InvokeModelCommand(params);
@@ -80,7 +80,7 @@ export default async function handler(payload, options) {
     for (let i = 0; i < 5; i++) {
       sql = extractCodeBlock(response);
       try {
-        result = await query(sql, options);
+        result = await options.query(sql, options);
         options.sendEvidence({ sql, result });
         break;
       } catch (sqlError) {

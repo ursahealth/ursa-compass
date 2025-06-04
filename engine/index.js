@@ -1,7 +1,3 @@
-import getPrompt from "./get-prompt.js";
-import investigate from "./investigate.js";
+import handler from "./handler.js";
 
-export default {
-  getPrompt,
-  investigate,
-};
+export default { handler };
