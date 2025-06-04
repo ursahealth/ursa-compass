@@ -23,7 +23,7 @@ export default function parsePlaybookYaml(filename: string, rawContent: string):
 
     if (
       isAccumulatingDescription &&
-      (line.trim().startsWith("-step") ||
+      (line.trim().startsWith("- step") ||
         line.trim().startsWith("- check:") ||
         line.trim().startsWith("dependencies:"))
     ) {
@@ -41,7 +41,7 @@ export default function parsePlaybookYaml(filename: string, rawContent: string):
 
     if (
       isAccumulatingDependencies &&
-      (line.trim().startsWith("-step") || line.trim().startsWith("- check:"))
+      (line.trim().startsWith("- step") || line.trim().startsWith("- check:"))
     ) {
       isAccumulatingDependencies = false;
       if (currentScope === "step" && currentStep) {
@@ -53,7 +53,8 @@ export default function parsePlaybookYaml(filename: string, rawContent: string):
     }
 
     if (isAccumulatingDependencies && line.trim().startsWith("- ")) {
-      dependencies.push(line.trim().substring(2)); // Remove leading "- "
+      const lineNoComments = line.split("#")[0]; // Remove comments
+      dependencies.push(lineNoComments.trim().substring(2)); // Remove leading "- "
       continue;
     }
 
@@ -75,6 +76,20 @@ export default function parsePlaybookYaml(filename: string, rawContent: string):
     if (line.trim().startsWith("description: |") && currentStep) {
       isAccumulatingDescription = true;
       description = "";
+      continue;
+    }
+
+    if (line.trim().startsWith("description:") && currentStep) {
+      let formattedDescription = line.split(/description:\s*/)[1];
+      if (formattedDescription.startsWith('"') && formattedDescription.endsWith('"')) {
+        formattedDescription = formattedDescription.slice(1, -1); // Remove quotes
+      }
+      if (currentScope === "step" && currentStep) {
+        currentStep.description = formattedDescription;
+      } else if (currentScope === "check" && currentStep && currentStep.checks.length > 0) {
+        const lastCheck = currentStep.checks[currentStep.checks.length - 1];
+        lastCheck.description = formattedDescription;
+      }
       continue;
     }
 

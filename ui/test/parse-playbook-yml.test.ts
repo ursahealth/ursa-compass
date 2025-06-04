@@ -12,7 +12,7 @@ const testPlaybook = `playbook:
         - check: id-consistency
           label: Assess reliability and population consistency of identifier fields.
           dependencies:
-            - id-fields
+            - id-fields # here is a comment to ignore
         - check: primary-patient-id
           label: Determine primary source_local_patient_id candidate.
           dependencies: 
