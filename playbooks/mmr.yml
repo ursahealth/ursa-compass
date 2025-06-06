@@ -1,0 +1,69 @@
+playbook:
+  goal: Reconcile transactional MMR data to produce a final, accurate monthly snapshot of member risk, revenue, and enrollment status.
+  steps:
+    - step: mmr-identification-and-structure
+      label: Understand MMR file structure, identifiers, and time dimensions.
+      checks:
+        - check: id-member-identifier-mmr
+          label: Identify the primary member identifier (e.g., MBI).
+        - check: id-time-dimensions
+          label: Differentiate the two key time dimensions - the incurred/covered period and the payment/report date.
+          description: "An MMR transaction has two dates: the month it applies to (covered period) and the month the transaction was reported (payment date). This is critical for sequencing."
+        - check: id-plan-identifiers
+          label: Identify plan-level identifiers like PBP (Plan Benefit Package).
+          description: "Note that contract numbers are often missing from MMR files and must be joined from a separate membership/eligibility file."
+
+    - step: mmr-transaction-reconciliation
+      label: Reconcile the sequence of transactions for each member-month to determine the final action status.
+      checks:
+        - check: transaction-sequencing
+          label: Establish the chronological sequence of transactions for a given member-month.
+          description: "Order transactions by payment/report date. For transactions in the same payment month, use adjustment reason codes as a tie-breaker (e.g., reversals happen before positive adjustments)."
+          dependencies:
+            - id-time-dimensions
+            - core-adjustment-reason-code
+        - check: transaction-financial-convention
+          label: Determine if financial amounts are 'increase-to' (the change/delta) or 'resulting' (the final value).
+          description: "Standard CMS MMRs use 'increase-to' convention. Misinterpreting this leads to incorrect financial totals."
+        - check: transaction-final-action-logic
+          label: Synthesize all transactions for a member-month to derive the single 'final action' record.
+          description: "This involves applying the ordered sequence of transactions to arrive at the latest, most correct status and financial values."
+          dependencies:
+            - transaction-sequencing
+            - transaction-financial-convention
+
+    - step: mmr-data-element-analysis
+      label: Analyze and interpret key MMR data fields.
+      checks:
+        - check: core-raf-scores
+          label: Identify and validate Part C and Part D Risk Adjustment Factor (RAF) scores.
+          description: "Be aware of spurious zero or null RAF scores on records for Part D or for retro-disenrolled members. Use payment amounts to determine if a null/zero RAF is legitimate."
+        - check: core-payment-amounts
+          label: Identify and validate the various payment and revenue fields (e.g., Total MA Payment, Rebates).
+        - check: core-adjustment-reason-code
+          label: Interpret the Adjustment Reason Code (ARC) to understand the nature of a transaction.
+          description: "Codes indicate events like initial payments, mid-year updates, retroactive hospice status, or disenrollment, which are critical for correct processing."
+        - check: core-part-c-vs-d-rows
+          label: Distinguish between rows pertaining to Part C (medical) versus Part D (pharmacy) benefits.
+          description: "A single payment month can have separate rows for Part C and Part D, which must be handled correctly to avoid misinterpreting nulls (e.g., a null Part C RAF on a Part D row)."
+        - check: core-hospice-esrd-status
+          label: Identify flags for Hospice and End-Stage Renal Disease (ESRD) status.
+          description: "These statuses significantly impact payment calculations and risk attribution."
+
+    - step: mmr-membership-interleaving
+      label: Integrate MMR data with membership/eligibility files for a complete member view.
+      checks:
+        - check: interleave-missing-contract-id
+          label: Join MMR data with the primary membership file to add missing identifiers, primarily the contract number.
+          description: "This step is essential as the contract ID, required for many financial rollups, is typically not on the MMR file."
+          dependencies:
+            - id-plan-identifiers
+        - check: interleave-determine-at-risk-status
+          label: Define logic to flag a member-month as 'at-risk' for the provider organization.
+          description: "This is a key business rule. It often relies on confirming a positive CMS payment amount on the MMR, indicating financial responsibility for that month."
+          dependencies:
+            - transaction-final-action-logic # Need final action financials
+        - check: interleave-reconcile-enrollment-periods
+          label: Use MMR as the source of truth for enrollment periods when membership files are unreliable or incomplete.
+          description: "The presence of a paid MMR record for a month is strong evidence of enrollment, even if the primary membership file has gaps or conflicting information."
+

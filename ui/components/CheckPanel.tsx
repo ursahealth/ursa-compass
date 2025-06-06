@@ -155,7 +155,7 @@ export const CheckPanel = ({
                       <span className="px-4 font-medium">Ursa Compass:</span>
                     </div>
                   )}
-                  <MessageContent showLogBar text={message.content} />
+                  <MessageContent text={message.content} />
                 </div>
               ))}
               {isLastMessageAskUser && (
@@ -185,7 +185,7 @@ export const CheckPanel = ({
                     </div>
                     <span className="px-4 font-medium">Ursa Compass:</span>
                   </div>
-                  <MessageContent showLogBar text="... underway" />
+                  <MessageContent text="... underway" />
                 </div>
               )}
               <div ref={messagesEndRef} />

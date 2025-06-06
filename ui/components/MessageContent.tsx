@@ -24,34 +24,21 @@ function parseCodeBlocks(inputString: string): Array<{ type: "code" | "text"; te
   return output;
 }
 
-export default function ChatContent({
-  type,
-  text,
-  query,
-  isLogBar,
-  showLogBar,
-}: {
-  text?: string;
-  type?: string;
-  query?: { sql: string; result: Array<{ [key: string]: any }> };
-  isLogBar?: boolean;
-  showLogBar?: boolean;
-}) {
-  const bufferWidth = showLogBar ? 820 : 500;
+export default function ChatContent({ text }: { text?: string }) {
   if (!text) {
     return null;
   }
 
   const parsedItems = parseCodeBlocks(text);
   return (
-    <div className={`${isLogBar ? "" : "rounded-lg"} bg-gray-100 px-4 py-2 text-sm text-gray-800`}>
+    <div className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-800">
       {parsedItems.map((textItem, i) => {
         if (textItem.type === "code") {
           return (
             <div
               className="w-full max-w-full overflow-hidden"
               key={i}
-              style={{ maxWidth: `calc(100vw - ${bufferWidth}px)` }}
+              style={{ maxWidth: `calc(100vw - 500px)` }}
             >
               <div className="flex w-full flex-col">
                 <pre className="w-full overflow-x-auto">
@@ -63,7 +50,11 @@ export default function ChatContent({
             </div>
           );
         }
-        return <p className="my-2" key={i}>{textItem.text}</p>;
+        return (
+          <p className="my-2" key={i}>
+            {textItem.text}
+          </p>
+        );
       })}
     </div>
   );

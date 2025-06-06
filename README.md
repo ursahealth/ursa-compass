@@ -1,4 +1,9 @@
-# Ursa Compass
+<table>
+<tr>
+<td><img src="./compass-logo.svg" width="100" alt="Compass Logo"></td>
+<td><h1>Ursa Compass</h1></td>
+</tr>
+</table>
 
 Ursa Compass is a tool to help data engineers make sense of healthcare claims data packages. It sets up a three-way conversation between the data engineer, the LLM, and the procedural code of Ursa Compass.
 
