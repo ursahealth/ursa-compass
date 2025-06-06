@@ -247,9 +247,12 @@ export const InspectionWorkspace = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(session),
         })
-          .then(() => {
-            // TODO: make sure it's a 200
-            console.log("Session autosaved:", session.uuid, session.name);
+          .then((data) => {
+            if (data.status === 200) {
+              console.log("Session autosaved:", session.uuid, session.name);
+            } else if (data.status >= 400) {
+              console.log("Error autosaving session", data);
+            }
           })
           .catch((error) => {
             console.error("Error autosaving session:", error);
