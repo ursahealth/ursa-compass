@@ -1,5 +1,5 @@
 import { EvidenceItem, Message, Session } from "../util/types";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { OutlineNav } from "./OutlineNav";
 import { CheckPanel } from "./CheckPanel";
 import { MainPanel } from "./MainPanel";
@@ -36,6 +36,7 @@ export const InspectionWorkspace = ({
   const [focus, setFocus] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
   const [baseSystemPrompt, setBaseSystemPrompt] = useState<string | null>(null);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   const activeSession = sessions.find((s) => s.uuid === activeSessionId);
   const activeOpenChat =
@@ -152,6 +153,56 @@ export const InspectionWorkspace = ({
       return updatedSessions;
     });
   }
+
+  const updateURL = (sessionId: string | null, focusValue: string | null) => {
+    if (!hasHydrated) {
+      // First time - read from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionParam = urlParams.get("session");
+      const sessionNameParam = urlParams.get("session-name");
+      const focusParam = urlParams.get("focus");
+
+      // Set focus immediately
+      if (focusParam) {
+        setFocus(focusParam);
+      }
+
+      if (sessionNameParam) {
+        console.log("TODO: lookup session name")
+        return;
+      }
+
+      // Handle session if it looks like an ID
+      if (sessionParam?.match(/^[a-f0-9-]{36}$/i)) {
+        setActiveSessionId(sessionParam);
+      }
+
+      setHasHydrated(true);
+      return;
+    }
+
+    // Subsequent time - update URL
+    const url = new URL(window.location.href);
+
+    if (sessionId) {
+      url.searchParams.set("session", sessionId);
+    } else {
+      url.searchParams.delete("session");
+    }
+
+    if (focusValue) {
+      url.searchParams.set("focus", focusValue);
+    } else {
+      url.searchParams.delete("focus");
+    }
+
+    // Update URL without triggering a page reload
+    window.history.replaceState({}, "", url.toString());
+  };
+
+  useEffect(() => {
+    updateURL(activeSessionId, focus);
+  }, [activeSessionId, focus]);
 
   useEffect(() => {
     socketInitializer();
