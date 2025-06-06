@@ -192,11 +192,9 @@ export const InspectionWorkspace = ({
           };
           setSessions([...sessions, newSession]);
           setActiveSessionId(uuid);
-          autosaveSession(newSession);
           url.searchParams.set("session", uuid);
           url.searchParams.set("focus", "open-chat-0");
 
-          /*
           // somewhat duplicative with blurTableName but different enough
           fetch(
             `/api/compass/verify-table?tableName=${encodeURIComponent(newSession.tableName || "")}`
@@ -219,11 +217,11 @@ export const InspectionWorkspace = ({
             .catch((error) => {
               console.error("Error fetching table data:", error);
               const updatedSession = Object.assign({}, newSession, { tableStatus: "ERROR" });
+              autosaveSession(updatedSession);
               setSessions((prevSessions) =>
                 prevSessions.map((s) => (s.uuid === uuid ? updatedSession : s))
               );
             });
-            */
         }
 
         url.searchParams.delete("table-name");
