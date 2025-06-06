@@ -37,6 +37,7 @@ export const InspectionWorkspace = ({
   const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
   const [baseSystemPrompt, setBaseSystemPrompt] = useState<string | null>(null);
   const [hasHydrated, setHasHydrated] = useState(false);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
 
   const activeSession = sessions.find((s) => s.uuid === activeSessionId);
   const activeOpenChat =
@@ -167,8 +168,68 @@ export const InspectionWorkspace = ({
         setFocus(focusParam);
       }
 
+      if (sessionNameParam && !sessionsLoaded) {
+        // sit tight until the sessions are loaded
+        return;
+      }
+
       if (sessionNameParam) {
-        console.log("TODO: lookup session name")
+        const sessionMatch = sessions.find((s) => s.name === sessionNameParam);
+        const url = new URL(window.location.href);
+        if (sessionMatch) {
+          setActiveSessionId(sessionMatch.uuid);
+        } else {
+          // need to create a new session with this name
+          const uuid = crypto.randomUUID();
+          const newSession: Session = {
+            uuid,
+            name: sessionNameParam,
+            createdAt: new Date().toISOString(),
+            playbookName: "common-checks.yml",
+            tableName: urlParams.get("table-name") || null,
+            steps: [],
+            openChats: [{ key: "chat-0", messages: [], evidence: [] }],
+          };
+          setSessions([...sessions, newSession]);
+          setActiveSessionId(uuid);
+          autosaveSession(newSession);
+          url.searchParams.set("session", uuid);
+          url.searchParams.set("focus", "open-chat-0");
+
+          /*
+          // somewhat duplicative with blurTableName but different enough
+          fetch(
+            `/api/compass/verify-table?tableName=${encodeURIComponent(newSession.tableName || "")}`
+          )
+            .then((response) => response.json())
+            .then((data) => {
+              const tableDocumentation = data.tableDocumentation
+                ? { tableDocumentation: data.tableDocumentation }
+                : {};
+              const updatedSession = Object.assign({}, newSession, tableDocumentation, {
+                tableStatus: "SUCCESS",
+                tableData: data.results,
+                tableSql: data.sql,
+              });
+              setSessions((prevSessions) =>
+                prevSessions.map((s) => (s.uuid === uuid ? updatedSession : s))
+              );
+              autosaveSession(updatedSession);
+            })
+            .catch((error) => {
+              console.error("Error fetching table data:", error);
+              const updatedSession = Object.assign({}, newSession, { tableStatus: "ERROR" });
+              setSessions((prevSessions) =>
+                prevSessions.map((s) => (s.uuid === uuid ? updatedSession : s))
+              );
+            });
+            */
+        }
+
+        url.searchParams.delete("table-name");
+        url.searchParams.delete("session-name");
+        window.history.replaceState({}, "", url.toString());
+        setHasHydrated(true);
         return;
       }
 
@@ -202,7 +263,7 @@ export const InspectionWorkspace = ({
 
   useEffect(() => {
     updateURL(activeSessionId, focus);
-  }, [activeSessionId, focus]);
+  }, [activeSessionId, focus, sessionsLoaded]);
 
   useEffect(() => {
     socketInitializer();
@@ -255,7 +316,11 @@ export const InspectionWorkspace = ({
     async function loadSessions() {
       const response = await fetch("/api/compass/get-sessions");
       const data = await response.json();
-      setSessions(data);
+      setSessions((prevSessions) => {
+        // Only update if we don't already have sessions
+        return prevSessions.length === 0 ? data : prevSessions;
+      });
+      setSessionsLoaded(true);
     }
 
     loadSessions();
