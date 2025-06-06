@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   try {
     const [schema, tableName] = (req.query.tableName as string).split(".");
     const sql = `select * from ${sanitize(schema)}.${sanitize(tableName)} limit 5`;
-    const results = await query(sql, []);
+    const results = await query(sql, {});
 
     res.status(200).json({ sql, results });
   } catch (err) {
