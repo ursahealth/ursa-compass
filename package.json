@@ -1,6 +1,6 @@
 {
   "name": "ursa-compass",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Ursa Health's AI copilot for data integration",
   "type": "module",
   "main": "./lib/index.cjs",

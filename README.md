@@ -7,7 +7,7 @@
 
 Ursa Compass is a tool to help data engineers make sense of healthcare claims data packages. It sets up a three-way conversation between the data engineer, the LLM, and the procedural code of Ursa Compass.
 
-Ursa Compass drives the conversation based on a series of questions in an editable prompts file. It poses the questions to the LLM, which has the option of running a SQL query, asking the data engineer for clarification, or attempting to answer the question with an assertion that can be accepted or rejected from the data engineer.
+Ursa Compass drives the conversation based on a series of questions in an editable yml playbook. It poses the questions to the LLM, which has the option of running a SQL query, asking the data engineer for clarification, or attempting to answer the question with an assertion that can be accepted or rejected from the data engineer.
 
 ```mermaid
 graph TD;
@@ -33,6 +33,7 @@ The git repo of Ursa Compass ships with a sample implementation in Next.js, whic
 
 ```
  $ (cd engine && npm install)
+ $ (cd ui && npm install && npm run build)
  $ cd nextjs-app
  $ npm install
  $ npm run dev
@@ -42,36 +43,13 @@ You will want to set DATABASE_TYPE and TARGET_DATABASE_URL in `/nextjs-app/.env.
 
 #### Integrate Ursa Compass into your application
 
-The npm package of Ursa Compass contains just the engine, without the Next.js sample implementation, and it can be incorporated into an existing application. 
+Ursa Compass comprises two npm packages: `ursa-compass`, which is just the engine, and `ursa-compass-ui`, which is the React front-end.
 
 ```
- $ npm install ursa-compass
+ $ npm install ursa-compass ursa-compass-ui
 ```
 
-You can look at the nextjs-app directory as a reference implementation, but usage will look something like:
-
-```
-const options = {
-    log: (contents) => {
-        sendLogToUser(contents);
-    },
-    prompts: {
-        "investigate-pharmacy": "Override prompt text"
-    },
-    promptUser: async (message) => {
-        const userResponse = await waitForSocketResponse();
-        return userResponse;
-    },
-    query: async (sql, params) => {
-        const result = await executeDatabaseQuery(sql, params);
-        return result;
-    },
-    sendMessage: (message: string, type: string) => {
-        sendMessageToUser(type || "message", { text: message });
-    }
-}
-await investigate("pharmacy", tableName, existingDocumentation, options);
-```
+You can look at the nextjs-app directory as a reference implementation for how to build your app around Ursa Compass. In short, you will include InspectionWorkspace as a React component, and implement all the request handlers, presumably updating them to use a database instead of saving files to your local filesystem. The route that processes the socket request will rely on `ursa-compass` to do the heavy lifting.
 
 #### Use Ursa Studio
 

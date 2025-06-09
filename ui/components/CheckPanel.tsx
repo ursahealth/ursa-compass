@@ -20,7 +20,7 @@ export const CheckPanel = ({
   acceptAssertion: Function;
   appendMessage: Function;
   check: PlaybookCheck;
-  iconSet: IconSet;
+  iconSet?: IconSet;
   isOpenChat?: boolean;
   playbook: Playbook;
   session: Session;

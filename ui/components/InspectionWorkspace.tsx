@@ -26,7 +26,7 @@ export const InspectionWorkspace = ({
   socket,
   socketInitializer,
 }: {
-  iconSet: IconSet;
+  iconSet?: IconSet;
   isSocketInitialized: boolean;
   Navbar?: React.ComponentType;
   socket: { on: Function; off: Function; emit: Function };

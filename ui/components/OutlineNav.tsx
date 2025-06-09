@@ -15,7 +15,7 @@ export const OutlineNav = ({
   activePlaybook: Playbook;
   addOpenChat: Function;
   focus: string | null;
-  iconSet: IconSet;
+  iconSet?: IconSet;
   session: Session;
   setFocus: Function;
   tableName: string | null;
@@ -35,10 +35,10 @@ export const OutlineNav = ({
   }
 
   const checkStatusMap: Record<string, React.ReactElement | string> = {
-    FINISHED: iconSet.Check || "✅ ",
-    UNDERWAY: iconSet.Underway || "⏳ ",
-    USER_ACTION: iconSet.Prompt || "❓ ",
-    ERROR: iconSet.Error || "❌ ",
+    FINISHED: iconSet?.Check || "✅ ",
+    UNDERWAY: iconSet?.Underway || "⏳ ",
+    USER_ACTION: iconSet?.Prompt || "❓ ",
+    ERROR: iconSet?.Error || "❌ ",
     LOCKED: iconSet?.Lock || "🔒 ",
     NOT_STARTED: "",
   };
