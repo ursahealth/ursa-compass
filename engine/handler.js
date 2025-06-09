@@ -39,7 +39,9 @@ function extractCodeBlock(text) {
 async function queryAI(messages, options = {}) {
   const params = {
     body: JSON.stringify({
-      messages,
+      messages: messages.map((message) =>
+        message.role === "compass" ? { role: "user", content: message.content } : message
+      ),
       max_tokens: 1000, // TODO: increase probably
       temperature: options.temperature || options.temperature === 0 ? options.temperature : 0.5,
       anthropic_version: "bedrock-2023-05-31",
@@ -85,7 +87,7 @@ export default async function handler(payload, options) {
         break;
       } catch (sqlError) {
         messages.push({
-          role: "user",
+          role: "compass",
           content:
             `That query failed with \n${sqlError.message}\n\nCan you try again? ` +
             "I'm not going to display your previous message to the user, so please do not " +
@@ -106,14 +108,14 @@ export default async function handler(payload, options) {
     const responseType = getResponseType(response);
     if (responseType === "NONE") {
       addToMessages(
-        "user",
+        "compass",
         "I'm unable to parse your response. Could you restate it? " +
           "Please make sure to start your reponse with one of the allowable keywords.",
         options
       );
     } else if (responseType === "QUERY_DATABASE") {
       const { result } = await trySql(response, options);
-      addToMessages("user", `Result is: \n\`\`\`\n${JSON.stringify(result)}\n\`\`\``, options);
+      addToMessages("compass", `Result is: \n\`\`\`\n${JSON.stringify(result)}\n\`\`\``, options);
     } else {
       return { responseType, text: response };
     }

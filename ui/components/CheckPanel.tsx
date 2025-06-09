@@ -144,6 +144,11 @@ export const CheckPanel = ({
                       </div>
                       <span className="px-4 font-medium">You:</span>
                     </div>
+                  ) : message.role === "compass" ? (
+                    <div className="mb-2 mt-2 flex items-center px-4">
+                      <div className="h-5 w-5 text-gray-500 text-xl m-2 mt-0">{"\u{1F9ED}"}</div>
+                      <span className="px-4 font-medium">Ursa Compass:</span>
+                    </div>
                   ) : (
                     <div className="mb-2 mt-2 flex items-center px-4">
                       <div
@@ -152,7 +157,7 @@ export const CheckPanel = ({
                       >
                         {"\u{2728}"}
                       </div>
-                      <span className="px-4 font-medium">Ursa Compass:</span>
+                      <span className="px-4 font-medium">LLM Model:</span>
                     </div>
                   )}
                   <MessageContent text={message.content} />
@@ -181,7 +186,7 @@ export const CheckPanel = ({
                       className="h-5 w-5 text-gray-500 text-xl m-2 mt-0"
                       style={{ filter: "grayscale(100%)" }}
                     >
-                      {"\u{2728}"}
+                      {"\u{1F9ED}"}
                     </div>
                     <span className="px-4 font-medium">Ursa Compass:</span>
                   </div>
