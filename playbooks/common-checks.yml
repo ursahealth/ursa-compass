@@ -1,0 +1,28 @@
+playbook:
+  goal: Common helper checks for general ad-hoc data analysis
+  steps:
+    - step: data-model-keys
+      label: Determine composition and integrity of data model keys
+      checks:
+        - check: duplicate-primary-key
+          label: Make sure there are no duplicate primary keys on this table
+          description: |
+            The primary key for the current table should be described in the table documentation.
+            Run a query like the following to check for duplicates:
+            ```
+              select count(*) as duplicate_key_count
+              from (
+                select primary_key_field
+                from my_table
+                group by primary_key_field
+                having count(*) > 1
+              ) subquery
+            ```
+            and if there are duplicates, run something like
+            ```
+              select primary_key_field, count(*) as duplicate_count
+              from my_table
+              group by primary_key_field
+              having count(*) > 1
+              limit 10
+            ```

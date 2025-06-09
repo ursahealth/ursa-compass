@@ -1,0 +1,18 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer circle border -->
+  <circle cx="100" cy="100" r="95" fill="#0097a9" stroke="none"/>
+  
+  <!-- Inner circle background -->
+  <circle cx="100" cy="100" r="75" fill="#fff" stroke="none"/>
+  
+  <!-- Compass needle/star shape - rotated at angle -->
+  <g transform="rotate(25 100 100)">
+    <path d="M 100 45 L 108 88 L 100 95 L 92 88 Z" fill="#0097a9"/>
+    <path d="M 100 105 L 108 112 L 155 100 L 108 88 Z" fill="#0097a9"/>
+    <path d="M 100 95 L 92 112 L 45 100 L 92 88 Z" fill="#0097a9"/>
+    <path d="M 100 105 L 108 112 L 100 155 L 92 112 Z" fill="#0097a9"/>
+  </g>
+  
+  <!-- Center circle -->
+  <circle cx="100" cy="100" r="8" fill="#fff"/>
+</svg>

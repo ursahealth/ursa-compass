@@ -1,0 +1,62 @@
+playbook:
+  goal: Reconcile the transactional history of MAO-004 encounter submissions to determine the final, authoritative set of RAF-eligible diagnoses for each clinical encounter.
+  steps:
+    - step: mao-identification-and-linking
+      label: Identify encounter transaction identifiers and establish the relationship between linked transactions.
+      checks:
+        - check: id-encounter-icn
+          label: Identify the Encounter ICN (Internal Control Number), which functions as the unique transaction ID.
+        - check: id-encounter-link-icn
+          label: Identify the 'linked' or 'prior' ICN field, which creates a backward pointer to a previous transaction.
+        - check: id-transaction-family
+          label: Establish the 'transaction family' for a single clinical event.
+          description: "All transactions that are part of the same update chain (linked directly or indirectly to the same original encounter) belong to the same family."
+          dependencies:
+            - id-encounter-link-icn
+
+    - step: mao-transaction-reconciliation
+      label: Reconcile the sequence of transactions for each encounter family to determine the final action status.
+      checks:
+        - check: reconciliation-daisy-chain-logic
+          label: Implement logic to connect transactions into their correct chronological 'daisy chain'.
+          description: "Since transactions may point back to the original ICN rather than the immediately preceding one, logic must use submission dates and linking ICNs to find the 'next' transaction in a sequence for each diagnosis."
+          dependencies:
+            - id-transaction-family
+        - check: reconciliation-identify-final-action
+          label: Identify the final action transaction for each diagnosis within an encounter.
+          description: "The final action is the last transaction in a daisy chain. This is often identified by finding the transaction that has no subsequent 'updating' transaction pointing to it."
+          dependencies:
+            - reconciliation-daisy-chain-logic
+
+    - step: mao-data-element-analysis
+      label: Analyze and interpret key MAO-004 data fields that drive the reconciliation logic.
+      checks:
+        - check: core-encounter-type-switch
+          label: Interpret the encounter type/switch code.
+          description: "Identify codes for Original (1), Void/Reversal (2), Replacement (3), and Chart Review Add/Delete (4/7). This is critical for determining the transaction's scope."
+        - check: core-add-delete-flag
+          label: Analyze the plan-submitted Add/Delete flag on each diagnosis.
+          description: "This indicates the health plan's intent for a specific diagnosis code within a transaction."
+        - check: core-cms-allowed-status
+          label: Analyze the CMS Allowed/Disallowed status.
+          description: "This reflects CMS's final judgment on whether a diagnosis is accepted for RAF calculations based on their rules (e.g., excluding diagnoses from diagnostic tests)."
+        - check: core-submission-date
+          label: Utilize the submission date for sequencing transactions.
+          description: "The submission date is a key component for ordering when multiple transactions link to the same prior encounter."
+
+    - step: mao-final-diagnosis-derivation
+      label: Synthesize the reconciled transactions to produce the final set of diagnoses for an encounter.
+      checks:
+        - check: derivation-distinguish-update-scope
+          label: Differentiate between encounter-wide and diagnosis-specific updates.
+          description: "A 'Replacement' (Type 3) affects all diagnoses from the prior encounter. A 'Chart Review Add' (Type 4) only supplements the existing diagnoses, it does not replace them."
+          dependencies:
+            - core-encounter-type-switch
+        - check: derivation-apply-final-action
+          label: Apply the final action logic to construct the complete and final list of diagnoses for the encounter.
+          description: "This involves carrying forward diagnoses from prior transactions that were not affected by a subsequent update, and applying the additions/deletions from the final action transactions."
+          dependencies:
+            - reconciliation-identify-final-action
+            - derivation-distinguish-update-scope
+
+

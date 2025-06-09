@@ -1,4 +1,4 @@
-import { EvidenceItem, Message, Session } from "../util/types";
+import { EvidenceItem, IconSet, Message, Session } from "../util/types";
 import { useEffect, useState } from "react";
 import { OutlineNav } from "./OutlineNav";
 import { CheckPanel } from "./CheckPanel";
@@ -20,11 +20,13 @@ function generateDefaultSessionName(date = new Date()) {
 let autosaveTimestamp: number | null = null;
 
 export const InspectionWorkspace = ({
+  iconSet,
   isSocketInitialized,
   Navbar,
   socket,
   socketInitializer,
 }: {
+  iconSet: IconSet;
   isSocketInitialized: boolean;
   Navbar?: React.ComponentType;
   socket: { on: Function; off: Function; emit: Function };
@@ -36,6 +38,8 @@ export const InspectionWorkspace = ({
   const [focus, setFocus] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
   const [baseSystemPrompt, setBaseSystemPrompt] = useState<string | null>(null);
+  const [hasHydrated, setHasHydrated] = useState(false);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
 
   const activeSession = sessions.find((s) => s.uuid === activeSessionId);
   const activeOpenChat =
@@ -153,6 +157,114 @@ export const InspectionWorkspace = ({
     });
   }
 
+  const updateURL = (sessionId: string | null, focusValue: string | null) => {
+    if (!hasHydrated) {
+      // First time - read from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionParam = urlParams.get("session");
+      const sessionNameParam = urlParams.get("session-name");
+      const focusParam = urlParams.get("focus");
+
+      // Set focus immediately
+      if (focusParam) {
+        setFocus(focusParam);
+      }
+
+      if (sessionNameParam && !sessionsLoaded) {
+        // sit tight until the sessions are loaded
+        return;
+      }
+
+      if (sessionNameParam) {
+        const sessionMatch = sessions.find((s) => s.name === sessionNameParam);
+        const url = new URL(window.location.href);
+        if (sessionMatch) {
+          setActiveSessionId(sessionMatch.uuid);
+        } else {
+          // need to create a new session with this name
+          const uuid = crypto.randomUUID();
+          const newSession: Session = {
+            uuid,
+            name: sessionNameParam,
+            createdAt: new Date().toISOString(),
+            playbookName: "common-checks.yml",
+            tableName: urlParams.get("table-name") || null,
+            steps: [],
+            openChats: [{ key: "chat-0", messages: [], evidence: [] }],
+          };
+          setSessions([...sessions, newSession]);
+          setActiveSessionId(uuid);
+          url.searchParams.set("session", uuid);
+          url.searchParams.set("focus", "open-chat-0");
+
+          // somewhat duplicative with blurTableName but different enough
+          fetch(
+            `/api/compass/verify-table?tableName=${encodeURIComponent(newSession.tableName || "")}`
+          )
+            .then((response) => response.json())
+            .then((data) => {
+              const tableDocumentation = data.tableDocumentation
+                ? { tableDocumentation: data.tableDocumentation }
+                : {};
+              const updatedSession = Object.assign({}, newSession, tableDocumentation, {
+                tableStatus: "SUCCESS",
+                tableData: data.results,
+                tableSql: data.sql,
+              });
+              setSessions((prevSessions) =>
+                prevSessions.map((s) => (s.uuid === uuid ? updatedSession : s))
+              );
+              autosaveSession(updatedSession);
+            })
+            .catch((error) => {
+              console.error("Error fetching table data:", error);
+              const updatedSession = Object.assign({}, newSession, { tableStatus: "ERROR" });
+              autosaveSession(updatedSession);
+              setSessions((prevSessions) =>
+                prevSessions.map((s) => (s.uuid === uuid ? updatedSession : s))
+              );
+            });
+        }
+
+        url.searchParams.delete("table-name");
+        url.searchParams.delete("session-name");
+        window.history.replaceState({}, "", url.toString());
+        setHasHydrated(true);
+        return;
+      }
+
+      // Handle session if it looks like an ID
+      if (sessionParam?.match(/^[a-f0-9-]{36}$/i)) {
+        setActiveSessionId(sessionParam);
+      }
+
+      setHasHydrated(true);
+      return;
+    }
+
+    // Subsequent time - update URL
+    const url = new URL(window.location.href);
+
+    if (sessionId) {
+      url.searchParams.set("session", sessionId);
+    } else {
+      url.searchParams.delete("session");
+    }
+
+    if (focusValue) {
+      url.searchParams.set("focus", focusValue);
+    } else {
+      url.searchParams.delete("focus");
+    }
+
+    // Update URL without triggering a page reload
+    window.history.replaceState({}, "", url.toString());
+  };
+
+  useEffect(() => {
+    updateURL(activeSessionId, focus);
+  }, [activeSessionId, focus, sessionsLoaded]);
+
   useEffect(() => {
     socketInitializer();
     if (!isSocketInitialized) {
@@ -204,7 +316,11 @@ export const InspectionWorkspace = ({
     async function loadSessions() {
       const response = await fetch("/api/compass/get-sessions");
       const data = await response.json();
-      setSessions(data);
+      setSessions((prevSessions) => {
+        // Only update if we don't already have sessions
+        return prevSessions.length === 0 ? data : prevSessions;
+      });
+      setSessionsLoaded(true);
     }
 
     loadSessions();
@@ -247,9 +363,12 @@ export const InspectionWorkspace = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(session),
         })
-          .then(() => {
-            // TODO: make sure it's a 200
-            console.log("Session autosaved:", session.uuid, session.name);
+          .then((data) => {
+            if (data.status === 200) {
+              console.log("Session autosaved:", session.uuid, session.name);
+            } else if (data.status >= 400) {
+              console.log("Error autosaving session", data);
+            }
           })
           .catch((error) => {
             console.error("Error autosaving session:", error);
@@ -495,6 +614,7 @@ export const InspectionWorkspace = ({
                 acceptAssertion={acceptAssertion}
                 appendMessage={appendMessage}
                 check={activeCheck}
+                iconSet={iconSet}
                 isOpenChat={!!activeOpenChat}
                 playbook={activePlaybook}
                 session={activeSession}
@@ -514,6 +634,7 @@ export const InspectionWorkspace = ({
                 activePlaybook={activePlaybook}
                 addOpenChat={addOpenChat}
                 focus={focus}
+                iconSet={iconSet}
                 setFocus={setFocus}
                 session={activeSession}
                 tableName={activeSession.tableName}

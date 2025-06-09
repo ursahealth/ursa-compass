@@ -54,3 +54,14 @@ export interface Playbook {
   goal: string;
   steps: PlaybookStep[];
 }
+
+export interface IconSet {
+  Check: React.JSX.Element;
+  Computer: React.JSX.Element;
+  Error: React.JSX.Element;
+  Lock: React.JSX.Element;
+  Prompt: React.JSX.Element;
+  Sparkles: React.JSX.Element;
+  Underway: React.JSX.Element;
+  User: React.JSX.Element;
+}
