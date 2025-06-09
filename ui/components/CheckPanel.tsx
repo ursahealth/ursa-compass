@@ -1,4 +1,4 @@
-import { Message } from "../util/types";
+import { IconSet, Message } from "../util/types";
 import { useEffect, useRef, useState } from "react";
 import { Playbook, PlaybookCheck, PlaybookStep, Session } from "../util/types";
 import { DataTable } from "./DataTable";
@@ -9,6 +9,7 @@ export const CheckPanel = ({
   acceptAssertion,
   appendMessage,
   check,
+  iconSet,
   isOpenChat,
   playbook,
   session,
@@ -19,6 +20,7 @@ export const CheckPanel = ({
   acceptAssertion: Function;
   appendMessage: Function;
   check: PlaybookCheck;
+  iconSet: IconSet;
   isOpenChat?: boolean;
   playbook: Playbook;
   session: Session;
@@ -140,13 +142,15 @@ export const CheckPanel = ({
                         className="h-5 w-5 text-gray-500 text-xl m-2 mt-0"
                         style={{ filter: "grayscale(100%)" }}
                       >
-                        {"\u{1F464}"}
+                        {iconSet?.User ? iconSet.User : "\u{1F464}"}
                       </div>
                       <span className="px-4 font-medium">You:</span>
                     </div>
                   ) : message.role === "compass" ? (
                     <div className="mb-2 mt-2 flex items-center px-4">
-                      <div className="h-5 w-5 text-gray-500 text-xl m-2 mt-0">{"\u{1F9ED}"}</div>
+                      <div className="h-5 w-5 text-gray-500 text-xl m-2 mt-0">
+                        {iconSet?.Computer ? iconSet.Computer : "\u{1F9ED}"}
+                      </div>
                       <span className="px-4 font-medium">Ursa Compass:</span>
                     </div>
                   ) : (
@@ -155,7 +159,7 @@ export const CheckPanel = ({
                         className="h-5 w-5 text-gray-500 text-xl m-2 mt-0"
                         style={{ filter: "grayscale(100%)" }}
                       >
-                        {"\u{2728}"}
+                        {iconSet?.Sparkles ? iconSet.Sparkles : "\u{2728}"}
                       </div>
                       <span className="px-4 font-medium">LLM Model:</span>
                     </div>

@@ -1,20 +1,12 @@
 import React from "react";
-import { Playbook, Session } from "../util/types";
+import { IconSet, Playbook, Session } from "../util/types";
 import getCheckStatus from "../util/get-check-status";
-
-const checkStatusMap: Record<string, string> = {
-  FINISHED: "✅ ",
-  UNDERWAY: "⏳ ",
-  USER_ACTION: "❓ ",
-  ERROR: "❌ ",
-  LOCKED: "🔒 ",
-  NOT_STARTED: "",
-};
 
 export const OutlineNav = ({
   activePlaybook,
   addOpenChat,
   focus,
+  iconSet,
   session,
   setFocus,
   tableName,
@@ -23,6 +15,7 @@ export const OutlineNav = ({
   activePlaybook: Playbook;
   addOpenChat: Function;
   focus: string | null;
+  iconSet: IconSet;
   session: Session;
   setFocus: Function;
   tableName: string | null;
@@ -40,6 +33,15 @@ export const OutlineNav = ({
   function setFocusTableName() {
     setFocus("tableName");
   }
+
+  const checkStatusMap: Record<string, React.ReactElement | string> = {
+    FINISHED: iconSet.Check || "✅ ",
+    UNDERWAY: iconSet.Underway || "⏳ ",
+    USER_ACTION: iconSet.Prompt || "❓ ",
+    ERROR: iconSet.Error || "❌ ",
+    LOCKED: iconSet?.Lock || "🔒 ",
+    NOT_STARTED: "",
+  };
 
   return (
     <div>

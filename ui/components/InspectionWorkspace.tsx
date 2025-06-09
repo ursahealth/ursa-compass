@@ -1,5 +1,5 @@
-import { EvidenceItem, Message, Session } from "../util/types";
-import { useCallback, useEffect, useState } from "react";
+import { EvidenceItem, IconSet, Message, Session } from "../util/types";
+import { useEffect, useState } from "react";
 import { OutlineNav } from "./OutlineNav";
 import { CheckPanel } from "./CheckPanel";
 import { MainPanel } from "./MainPanel";
@@ -20,11 +20,13 @@ function generateDefaultSessionName(date = new Date()) {
 let autosaveTimestamp: number | null = null;
 
 export const InspectionWorkspace = ({
+  iconSet,
   isSocketInitialized,
   Navbar,
   socket,
   socketInitializer,
 }: {
+  iconSet: IconSet;
   isSocketInitialized: boolean;
   Navbar?: React.ComponentType;
   socket: { on: Function; off: Function; emit: Function };
@@ -612,6 +614,7 @@ export const InspectionWorkspace = ({
                 acceptAssertion={acceptAssertion}
                 appendMessage={appendMessage}
                 check={activeCheck}
+                iconSet={iconSet}
                 isOpenChat={!!activeOpenChat}
                 playbook={activePlaybook}
                 session={activeSession}
@@ -631,6 +634,7 @@ export const InspectionWorkspace = ({
                 activePlaybook={activePlaybook}
                 addOpenChat={addOpenChat}
                 focus={focus}
+                iconSet={iconSet}
                 setFocus={setFocus}
                 session={activeSession}
                 tableName={activeSession.tableName}

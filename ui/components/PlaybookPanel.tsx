@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Playbook } from "../util/types";
+import { IconSet, Playbook } from "../util/types";
 import parsePlaybookYaml from "../util/parse-playbook-yml";
 
 export const PlaybookPanel = ({
