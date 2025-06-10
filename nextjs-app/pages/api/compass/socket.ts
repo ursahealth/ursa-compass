@@ -33,7 +33,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           checkKey: content.checkKey,
         };
 
-        console.log("received inspection check request", keys);
         try {
           await handleCheck(content, {
             databaseType: "postgres", // TODO: make user-editable
@@ -49,7 +48,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           console.error(err);
           socket.emit("log", { text: err.message });
         }
-        console.log("finished inspection check request", keys);
       });
     });
   }
