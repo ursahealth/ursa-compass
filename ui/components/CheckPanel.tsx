@@ -41,10 +41,10 @@ export const CheckPanel = ({
     sessionCheck = sessionStep?.checks.find((c) => c.key === check.name);
   }
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesScrollRef.current) {
+      messagesScrollRef.current.scrollTop = messagesScrollRef.current.scrollHeight;
     }
   }, [sessionCheck?.messages]);
 
@@ -133,7 +133,10 @@ export const CheckPanel = ({
           </div>
 
           {sessionCheck?.messages && sessionCheck.messages.length > 0 && (
-            <div className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 max-h-96 overflow-y-auto mb-4">
+            <div
+              className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 max-h-96 overflow-y-auto mb-4"
+              ref={messagesScrollRef}
+            >
               {sessionCheck.messages.map((message, i) => (
                 <div className="space-x-2" key={i}>
                   {message.role === "user" ? (
@@ -190,14 +193,13 @@ export const CheckPanel = ({
                       className="h-5 w-5 text-gray-500 text-xl m-2 mt-0"
                       style={{ filter: "grayscale(100%)" }}
                     >
-                      {"\u{1F9ED}"}
+                      {iconSet?.Computer ? iconSet.Computer : "\u{1F9ED}"}
                     </div>
                     <span className="px-4 font-medium">Ursa Compass:</span>
                   </div>
                   <MessageContent text="... underway" />
                 </div>
               )}
-              <div ref={messagesEndRef} />
             </div>
           )}
         </section>
