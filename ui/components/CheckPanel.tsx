@@ -51,6 +51,7 @@ export const CheckPanel = ({
   const acceptAssertionLocal = (stepName: string, checkName: string) => {
     const assertion = isRevisingAssertion ? revisedAssertion : currentAssertion;
     acceptAssertion(stepName, checkName, assertion);
+    setIsRevisingAssertion(false);
   };
 
   const rejectAssertionLocal = (
