@@ -82,6 +82,11 @@ export const CheckPanel = ({
     ? lastMessage.content.replace("ASSERTION:", "").replace("ASSERTION", "").trim()
     : null;
 
+  const allStepChecks = playbook.steps.map((s) => s.checks).flat();
+  const dependencies = (check.dependencies || []).map((dependencyKey) => {
+    const depCheck = allStepChecks.find((c) => c.name === dependencyKey);
+    return depCheck?.label || dependencyKey;
+  });
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6 bg-white rounded-xl shadow-md border border-gray-200">
       <div className="space-y-2">
@@ -96,6 +101,16 @@ export const CheckPanel = ({
           <div className="ml-6 p-2 border-l-4 border-blue-500 bg-blue-50 text-blue-900">
             <p className="text-sm">{check.description}</p>
           </div>
+        )}
+        {dependencies.length > 0 && <h2 className="pt-4 text-sm font-semibold">Dependencies:</h2>}
+        {dependencies.length > 0 && (
+          <ul className="text-sm list-disc">
+            {dependencies.map((dep, index) => (
+              <li key={index} className="ml-6">
+                {dep}
+              </li>
+            ))}
+          </ul>
         )}
         {isOpenChat && (
           <div className="ml-6 p-2 border-l-4 border-blue-500 bg-blue-50 text-blue-900">
