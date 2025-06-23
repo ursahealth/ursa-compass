@@ -1,9 +1,6 @@
 <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
   <!-- Outer circle border -->
-  <circle cx="100" cy="100" r="95" fill="#0097a9" stroke="none"/>
-  
-  <!-- Inner circle background -->
-  <circle cx="100" cy="100" r="75" fill="#fff" stroke="none"/>
+  <circle cx="100" cy="100" r="85" fill="none" stroke="#0097a9" stroke-width="20" />
   
   <!-- Compass needle/star shape - rotated at angle -->
   <g transform="rotate(25 100 100)">
