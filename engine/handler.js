@@ -16,6 +16,10 @@ function getResponseType(response) {
     return "PROVIDE_CTAS_SQL";
   } else if (firstRows.includes("ASK_USER")) {
     return "ASK_USER";
+  } else if (firstRows.includes("LESSONS_LEARNED")) {
+    return "LESSONS_LEARNED";
+  } else if (firstRows.includes("ALL_DONE")) {
+    return "ALL_DONE";
   }
   return "NONE";
 }

@@ -1,4 +1,4 @@
-import { EvidenceItem, IconSet, Message, Session } from "../util/types";
+import { EvidenceItem, IconSet, Message, Playbook, PlaybookCheck, Session } from "../util/types";
 import { useEffect, useState } from "react";
 import { OutlineNav } from "./OutlineNav";
 import { CheckPanel } from "./CheckPanel";
@@ -19,6 +19,20 @@ function generateDefaultSessionName(date = new Date()) {
 
 let autosaveTimestamp: number | null = null;
 
+function getLessonMessage(check: PlaybookCheck): string {
+  const { label, description } = check;
+  const descriptionBlurb = description ? ` and the check description was ${description}` : "";
+  return (
+    `Reviewing the conversation that we've just had, is there anything ` +
+    `you'd recommend we change in the original question or the description ` +
+    `surrounding it, to help eliminate confusion in the future? \n\n The check label ` +
+    `was ${label}${descriptionBlurb}. \n\n It is perfectly fine if you don't have any feedback. ` +
+    `If you have feedback, start your response with LESSONS_LEARNED. If you do not ` +
+    `have feedback, respond with ALL_DONE. \n\nKeep in mind that any lessons need to be specific ` +
+    `to this particular check but broadly applicable to other data sets, not just this one.`
+  );
+}
+
 export const InspectionWorkspace = ({
   iconSet,
   isSocketInitialized,
@@ -34,7 +48,7 @@ export const InspectionWorkspace = ({
 }) => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [playbooks, setPlaybooks] = useState<any[]>([]);
+  const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
   const [focus, setFocus] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string | null>(null);
   const [baseSystemPrompt, setBaseSystemPrompt] = useState<string | null>(null);
@@ -60,6 +74,25 @@ export const InspectionWorkspace = ({
       : activeOpenChat
       ? { name: activeOpenChat.key }
       : null;
+
+  const checksWithLessons: Array<{ lesson: string; name: string }> = [];
+  for (const step of activeSession?.steps || []) {
+    for (const check of step.checks || []) {
+      const lastMessage = check.messages[check.messages.length - 1];
+      if (
+        lastMessage &&
+        lastMessage.role === "assistant" &&
+        lastMessage.content.trim().startsWith("LESSONS_LEARNED")
+      ) {
+        const playbookStep = activePlaybook?.steps.find((s) => s.name === step.key);
+        const playbookCheck = playbookStep?.checks.find((c) => c.name === check.key);
+        checksWithLessons.push({
+          lesson: lastMessage.content,
+          name: playbookCheck?.label || "",
+        });
+      }
+    }
+  }
 
   function updateCheckAttribute(
     sessionId: string | null,
@@ -326,8 +359,19 @@ export const InspectionWorkspace = ({
     loadSessions();
   }, []);
 
-  const acceptAssertion = (stepKey: string, checkKey: string, assertion: string) => {
+  const acceptAssertion = (
+    stepKey: string,
+    checkKey: string,
+    messages: Array<Message>,
+    assertion: string
+  ) => {
     updateCheckAttribute(activeSessionId, stepKey, checkKey, "assertion", assertion);
+    const playbookStep = activePlaybook?.steps.find((step) => step.name === stepKey);
+    const playbookCheck = playbookStep?.checks.find((check) => check.name === checkKey);
+    if (playbookCheck && stepKey !== "open-chat") {
+      const lessonMessage = getLessonMessage(playbookCheck);
+      appendMessage(stepKey, checkKey, messages, lessonMessage);
+    }
   };
 
   const addOpenChat = () => {
@@ -504,7 +548,7 @@ export const InspectionWorkspace = ({
 
   const startCheck = () => {
     const effectiveSystemPrompt = systemPrompt || baseSystemPrompt;
-    if (effectiveSystemPrompt && activeSession) {
+    if (effectiveSystemPrompt && activeSession && activePlaybook && activeStep && activeCheck) {
       const populatedPrompt = populateSystemPrompt(
         effectiveSystemPrompt,
         activeSession,
@@ -515,11 +559,11 @@ export const InspectionWorkspace = ({
       const messages = [{ role: "user", content: populatedPrompt }];
       socket.emit("inspection-check", {
         sessionId: activeSessionId,
-        stepKey: activeStep?.name,
-        checkKey: activeCheck?.name,
+        stepKey: activeStep.name,
+        checkKey: activeCheck.name,
         messages,
       });
-      updateCheckAttribute(activeSessionId, activeStep?.name, activeCheck?.name, {
+      updateCheckAttribute(activeSessionId, activeStep.name, activeCheck.name, {
         messages,
         evidence: [],
         assertion: null,
@@ -609,7 +653,19 @@ export const InspectionWorkspace = ({
                   cols={100}
                 />
               </div>
-            ) : activeCheck || activeOpenChat ? (
+            ) : focus === "lessons-learned" ? (
+              <div>
+                {checksWithLessons?.map((check, index) => {
+                  const content = check.lesson.replace("LESSONS_LEARNED", "").trim();
+                  return (
+                    <div key={index} className="ml-2 pl-2 border-b border-gray-400">
+                      <h2 className="text-m font-semibold text-gray-700 mt-2 mb-4">{check.name}</h2>
+                      <div className="whitespace-pre-wrap mb-4">{content}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : activePlaybook && activeStep && activeCheck ? (
               <CheckPanel
                 acceptAssertion={acceptAssertion}
                 appendMessage={appendMessage}

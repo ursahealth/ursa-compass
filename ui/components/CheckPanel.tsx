@@ -50,7 +50,7 @@ export const CheckPanel = ({
 
   const acceptAssertionLocal = (stepName: string, checkName: string) => {
     const assertion = isRevisingAssertion ? revisedAssertion : currentAssertion;
-    acceptAssertion(stepName, checkName, assertion);
+    acceptAssertion(stepName, checkName, sessionCheck?.messages, assertion);
     setIsRevisingAssertion(false);
   };
 
@@ -73,13 +73,18 @@ export const CheckPanel = ({
     lastMessage &&
     lastMessage.role === "assistant" &&
     lastMessage.content.trim().startsWith("ASK_USER");
-  const isLastMessageAsssertion =
+  const isLastMessageAssertion =
     lastMessage &&
     lastMessage.role === "assistant" &&
     lastMessage.content.trim().startsWith("ASSERTION");
+  const isLastMessageDone =
+    lastMessage &&
+    lastMessage.role === "assistant" &&
+    (lastMessage.content.trim().startsWith("LESSONS_LEARNED") ||
+      lastMessage.content.trim().startsWith("ALL_DONE"));
   const currentAssertion = sessionCheck?.assertion
     ? sessionCheck.assertion
-    : isLastMessageAsssertion
+    : isLastMessageAssertion
     ? lastMessage.content.replace("ASSERTION:", "").replace("ASSERTION", "").trim()
     : null;
 
@@ -119,8 +124,7 @@ export const CheckPanel = ({
               This is an open chat session. You can interact with Ursa Compass freely. All accepted
               assertions will be included in the context window of the chat.
             </p>
-            <input
-              type="text"
+            <textarea
               placeholder="Type your question"
               className="w-full p-2 border rounded-md mt-2"
               value={sessionCheck?.openChatQuestion || ""}
@@ -202,7 +206,7 @@ export const CheckPanel = ({
                 />
               )}
 
-              {!isLastMessageAskUser && !isLastMessageAsssertion && (
+              {!isLastMessageAskUser && !isLastMessageAssertion && !isLastMessageDone && (
                 <div className="space-x-2">
                   <div className="mb-2 mt-2 flex items-center px-4">
                     <div

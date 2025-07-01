@@ -12,7 +12,7 @@ export const OutlineNav = ({
   tableName,
   tableStatus,
 }: {
-  activePlaybook: Playbook;
+  activePlaybook: Playbook | null;
   addOpenChat: Function;
   focus: string | null;
   iconSet?: IconSet;
@@ -42,6 +42,19 @@ export const OutlineNav = ({
     LOCKED: iconSet?.Lock || "🔒 ",
     NOT_STARTED: "",
   };
+
+  const checksWithLessons = session?.steps
+    .map((step) =>
+      step.checks.filter((check) => {
+        const lastMessage = check.messages[check.messages.length - 1];
+        return (
+          lastMessage &&
+          lastMessage.role === "assistant" &&
+          lastMessage.content.trim().startsWith("LESSONS_LEARNED")
+        );
+      })
+    )
+    .flat();
 
   return (
     <div>
@@ -129,6 +142,22 @@ export const OutlineNav = ({
             </ul>
           </React.Fragment>
         ))}
+        {checksWithLessons && checksWithLessons.length > 0 && (
+          <React.Fragment>
+            <li className="font-bold">Lessons Learned</li>
+            <ul className="pl-4 pb-2 list-disc">
+              <span
+                onClick={() => {
+                  setFocus("lessons-learned");
+                }}
+                className="cursor-pointer"
+              >
+                {checksWithLessons.length}
+                {checksWithLessons.length > 1 ? " Lessons Learned" : " Lesson Learned"}
+              </span>
+            </ul>
+          </React.Fragment>
+        )}
       </ul>
     </div>
   );
