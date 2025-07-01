@@ -93,7 +93,7 @@ export const InspectionWorkspace = ({
       }
     }
   }
-  
+
   function updateCheckAttribute(
     sessionId: string | null,
     stepKey: string,
