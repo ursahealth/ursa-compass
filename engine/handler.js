@@ -6,20 +6,20 @@ const bedrockClients = {};
 /*
   Check the first row of the response for keywords
 */
-function getResponseType(response) {
+function getResponseType(response, toolKeys) {
+  const keys = [
+    "QUERY_DATABASE",
+    "ASSERTION",
+    "PROVIDE_CTAS_SQL",
+    "ASK_USER",
+    "LESSONS_LEARNED",
+    "ALL_DONE",
+  ].concat(toolKeys);
   const firstRows = _.take(response.split("\n"), 4).join("\n");
-  if (firstRows.includes("QUERY_DATABASE")) {
-    return "QUERY_DATABASE";
-  } else if (firstRows.includes("ASSERTION")) {
-    return "ASSERTION";
-  } else if (firstRows.includes("PROVIDE_CTAS_SQL")) {
-    return "PROVIDE_CTAS_SQL";
-  } else if (firstRows.includes("ASK_USER")) {
-    return "ASK_USER";
-  } else if (firstRows.includes("LESSONS_LEARNED")) {
-    return "LESSONS_LEARNED";
-  } else if (firstRows.includes("ALL_DONE")) {
-    return "ALL_DONE";
+  for (const key of keys) {
+    if (firstRows.includes(key)) {
+      return key;
+    }
   }
   return "NONE";
 }
@@ -109,7 +109,7 @@ export default async function handler(payload, options) {
     let response = await queryAI(messages, options);
     addToMessages("assistant", response, options);
 
-    const responseType = getResponseType(response);
+    const responseType = getResponseType(response, Object.keys(options.tools || {}));
     if (responseType === "NONE") {
       addToMessages(
         "compass",
@@ -120,6 +120,21 @@ export default async function handler(payload, options) {
     } else if (responseType === "QUERY_DATABASE") {
       const { result } = await trySql(response, options);
       addToMessages("compass", `Result is: \n\`\`\`\n${JSON.stringify(result)}\n\`\`\``, options);
+    } else if (Object.keys(options.tools || {}).includes(responseType)) {
+      const toolFunc = options.tools[responseType];
+      const toolInputMatch = response.match(new RegExp(`${responseType}\\s*:?\\s*([\\s\\S]*)`));
+      const toolInput = toolInputMatch ? toolInputMatch[1].trim() : "";
+      let toolResult;
+      try {
+        toolResult = await toolFunc(toolInput);
+      } catch (toolError) {
+        toolResult = `Tool ${responseType} failed with error: ${toolError.message}`;
+      }
+      addToMessages(
+        "compass",
+        `Result is: \n\`\`\`\n${JSON.stringify(toolResult)}\n\`\`\``,
+        options
+      );
     } else {
       return { responseType, text: response };
     }

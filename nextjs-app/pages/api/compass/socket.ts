@@ -42,7 +42,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             sendEvidence: (evidence: { sql: string; results: any }) => {
               socket.emit("update", "evidence", keys, evidence);
             },
-            query
+            query,
+            tools: {
+              // just a toy example to demonstrate how to add custom tools
+              RIDDLE_RESULT: (input: string) => input.length * 2,
+            }
           });
         } catch (err: any) {
           console.error(err);
