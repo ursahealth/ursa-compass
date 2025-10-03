@@ -14,8 +14,13 @@ playbook:
           description: "Note that contract numbers are often missing from MMR files and must be joined from a separate membership/eligibility file."
 
     - step: mmr-transaction-reconciliation
-      label: Reconcile the sequence of transactions for each member-month to determine the final action status.
+      label: Determine the nature of the member-month transactions to help with reconcilation to final action status
       checks:
+        - check: transaction-restatement
+          label: Identify whether MMR transactions are restated or distinct across files.
+          description: "Restated transactions would have records with the same member, covered month, payment month, plan, and potentially adjustment reason code present in different in different values of the field 'ursa_file_instance_id'. If present, this 'ursa_file_instance_id' should be used as the concept of a 'file' instead of a CMS file id."
+          dependencies:
+            - id-time-dimensions
         - check: transaction-sequencing
           label: Establish the chronological sequence of transactions for a given member-month.
           description: "Order transactions by payment/report date. For transactions in the same payment month, use adjustment reason codes as a tie-breaker (e.g., reversals happen before positive adjustments)."
@@ -24,11 +29,12 @@ playbook:
             - core-adjustment-reason-code
         - check: transaction-financial-convention
           label: Determine if financial amounts are 'increase-to' (the change/delta) or 'resulting' (the final value).
-          description: "Standard CMS MMRs use 'increase-to' convention. Misinterpreting this leads to incorrect financial totals."
-        - check: transaction-final-action-logic
-          label: Synthesize all transactions for a member-month to derive the single 'final action' record.
-          description: "This involves applying the ordered sequence of transactions to arrive at the latest, most correct status and financial values."
+          description: "Standard CMS MMRs use 'increase-to' convention. Misinterpreting this leads to incorrect financial totals. It will be important to note any financial fields that do not have any negative values present, as those fields would represent resulting standard instead of increase-to standard."
+        - check: transaction-coverage-spans
+          label: Determine the length of time that transactions cover
+          description: "Member transactions will specify a coverage period in addition to the payment date period. If the covered start and end dates for a given transaction span longer than one month of time, this will be necessary to flag so that downstream logic can split these into one month chunks."
           dependencies:
+            - id-time-dimensions
             - transaction-sequencing
             - transaction-financial-convention
 
@@ -49,21 +55,3 @@ playbook:
         - check: core-hospice-esrd-status
           label: Identify flags for Hospice and End-Stage Renal Disease (ESRD) status.
           description: "These statuses significantly impact payment calculations and risk attribution."
-
-    - step: mmr-membership-interleaving
-      label: Integrate MMR data with membership/eligibility files for a complete member view.
-      checks:
-        - check: interleave-missing-contract-id
-          label: Join MMR data with the primary membership file to add missing identifiers, primarily the contract number.
-          description: "This step is essential as the contract ID, required for many financial rollups, is typically not on the MMR file."
-          dependencies:
-            - id-plan-identifiers
-        - check: interleave-determine-at-risk-status
-          label: Define logic to flag a member-month as 'at-risk' for the provider organization.
-          description: "This is a key business rule. It often relies on confirming a positive CMS payment amount on the MMR, indicating financial responsibility for that month."
-          dependencies:
-            - transaction-final-action-logic # Need final action financials
-        - check: interleave-reconcile-enrollment-periods
-          label: Use MMR as the source of truth for enrollment periods when membership files are unreliable or incomplete.
-          description: "The presence of a paid MMR record for a month is strong evidence of enrollment, even if the primary membership file has gaps or conflicting information."
-
